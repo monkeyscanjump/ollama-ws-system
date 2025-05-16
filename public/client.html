@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ollama WebSocket Client</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Ollama WebSocket Client</h1>
+      <div class="status-bar">
+        <span class="status-label">Status:</span>
+        <span id="connection-status" class="status-disconnected">Disconnected</span>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-button active" data-tab="chat">Chat</button>
+      <button class="tab-button" data-tab="settings">Settings</button>
+      <button class="tab-button" data-tab="models">Models</button>
+    </div>
+
+    <div class="tab-content active" id="chat-tab">
+      <div id="chat-container">
+        <div id="message-container"></div>
+        <div class="input-area">
+          <textarea id="prompt-input" placeholder="Enter your message..."></textarea>
+          <div class="button-row">
+            <button id="send-button" disabled>Send</button>
+            <button id="stop-button" disabled>Stop</button>
+            <button id="clear-button">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="settings-tab">
+      <div class="settings-container">
+        <h2>Connection Settings</h2>
+        <div class="setting-group">
+          <label for="client-id">Client ID:</label>
+          <input type="text" id="client-id" placeholder="Enter your client ID">
+        </div>
+        <div class="setting-group">
+          <label for="private-key">Private Key:</label>
+          <textarea id="private-key" placeholder="Paste your private key (PEM format)"></textarea>
+        </div>
+        <div class="setting-group">
+          <label for="server-url">Server URL:</label>
+          <input type="text" id="server-url" placeholder="ws://localhost:3000" value="ws://localhost:3000">
+        </div>
+        <div class="button-group">
+          <button id="connect-button">Connect</button>
+          <button id="disconnect-button" disabled>Disconnect</button>
+          <button id="save-settings-button">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="models-tab">
+      <div class="models-container">
+        <h2>Available Models</h2>
+        <button id="refresh-models-button" disabled>Refresh Models</button>
+        <div id="models-list" class="models-list">
+          <p>Connect to view available models</p>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Secure Ollama WebSocket Client with Public Key Authentication</p>
+    </footer>
+  </div>
+
+  <script src="client.js"></script>
+</body>
+</html>
