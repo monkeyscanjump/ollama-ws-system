@@ -1,4 +1,7 @@
-FROM node:20-alpine
+FROM node:20.13.1-alpine3.19
+
+# Update Alpine packages first
+RUN apk update && apk upgrade --available
 
 WORKDIR /app
 

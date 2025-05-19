@@ -3,23 +3,20 @@
  */
 const fs = require('fs');
 const path = require('path');
+const logger = require('./logger');
 
 /**
- * Ensure a directory exists, creating it if necessary
- * @param {string} dirPath - Path to ensure exists
- * @returns {boolean} True if successful
+ * Ensures a directory exists, creating it if necessary
+ *
+ * @param {string} dirPath - Path to directory
+ * @returns {boolean} true if directory was created, false if it already existed
  */
 function ensureDir(dirPath) {
   if (!fs.existsSync(dirPath)) {
-    try {
-      fs.mkdirSync(dirPath, { recursive: true });
-      return true;
-    } catch (error) {
-      console.error(`Failed to create directory ${dirPath}: ${error.message}`);
-      return false;
-    }
+    fs.mkdirSync(dirPath, { recursive: true });
+    return true; // Directory was newly created
   }
-  return true;
+  return false; // Directory already existed
 }
 
 /**
@@ -42,7 +39,7 @@ function loadJson(filePath, createIfMissing = false) {
     const data = fs.readFileSync(filePath, 'utf8');
     return JSON.parse(data);
   } catch (error) {
-    console.error(`Error reading ${filePath}: ${error.message}`);
+    logger.error(`Error reading ${filePath}: ${error.message}`);
     return null;
   }
 }
@@ -64,7 +61,7 @@ function saveJson(filePath, data, pretty = true) {
     fs.writeFileSync(filePath, jsonString);
     return true;
   } catch (error) {
-    console.error(`Error saving ${filePath}: ${error.message}`);
+    logger.error(`Error saving ${filePath}: ${error.message}`);
     return false;
   }
 }
