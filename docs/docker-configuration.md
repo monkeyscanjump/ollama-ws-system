@@ -68,7 +68,7 @@ The WebSocket server image can be built using the included Dockerfile:
 
 ```bash
 # From the project directory
-docker build -t ollama-ws-system .
+docker build -t ws-system .
 
 # Or using npm script
 npm run docker:build
@@ -153,8 +153,8 @@ services:
               capabilities: [gpu]
 
   websocket-server:
-    image: ollama-ws-system:latest
-    container_name: ollama-ws-system
+    image: ws-system:latest
+    container_name: ws-system
     depends_on:
       - ollama
     volumes:
@@ -228,8 +228,8 @@ version: '3.8'
 
 services:
   websocket-server:
-    image: ollama-ws-system:latest
-    container_name: ollama-ws-system
+    image: ws-system:latest
+    container_name: ws-system
     volumes:
       - ./data:/app/data
       - ./keys:/app/keys

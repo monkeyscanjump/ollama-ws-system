@@ -27,8 +27,8 @@ You can install the Ollama WebSocket System using either the standard installati
 
 ```bash
 # Clone the repository
-git clone https://github.com/monkeyscanjump/ollama-ws-system.git
-cd ollama-ws-system
+git clone https://github.com/monkeyscanjump/ws-system.git
+cd ws-system
 
 # Install dependencies
 npm install
@@ -51,8 +51,8 @@ If you prefer using Docker:
 
 ```bash
 # Clone the repository
-git clone https://github.com/monkeyscanjump/ollama-ws-system.git
-cd ollama-ws-system
+git clone https://github.com/monkeyscanjump/ws-system.git
+cd ws-system
 
 # Build the Docker image
 npm run docker:build
@@ -158,4 +158,4 @@ If you encounter issues:
 
 ## Getting Help
 
-If you need further assistance, please [open an issue](https://github.com/monkeyscanjump/ollama-ws-system/issues) on our GitHub repository.
+If you need further assistance, please [open an issue](https://github.com/monkeyscanjump/ws-system/issues) on our GitHub repository.

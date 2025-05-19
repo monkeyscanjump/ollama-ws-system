@@ -72,8 +72,8 @@ We provide comprehensive documentation to help you get started, implement client
 
 ```bash
 # Clone the repository
-git clone https://github.com/monkeyscanjump/ollama-ws-system.git
-cd ollama-ws-system
+git clone https://github.com/monkeyscanjump/ws-system.git
+cd ws-system
 
 # Install dependencies
 npm install
@@ -92,8 +92,8 @@ npm start
 
 ```bash
 # Clone the repository
-git clone https://github.com/monkeyscanjump/ollama-ws-system.git
-cd ollama-ws-system
+git clone https://github.com/monkeyscanjump/ws-system.git
+cd ws-system
 
 # Build the Docker image
 npm run docker:build
