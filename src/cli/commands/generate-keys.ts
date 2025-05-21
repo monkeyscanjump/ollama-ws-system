@@ -4,20 +4,22 @@
  * Generates RSA key pairs for client authentication.
  * Creates both private and public keys in PEM format.
  */
-const { createCommandHandler, prompt } = require('../utils/cli');
-const { generateRsaKeyPair, saveKeyPair, generateKeyFingerprint } = require('../utils/crypto');
-const { dirs, defaults } = require('../utils/config');
-const logger = require('../utils/logger');
-const clientManager = require('../utils/client-manager');
+import { Interface as ReadlineInterface } from 'readline';
+import { createCommandHandler } from '../utils/cli';
+import { generateRsaKeyPair, saveKeyPair, generateKeyFingerprint } from '../utils/crypto';
+import { dirs, defaults } from '../config';
+import logger from '../utils/logger';
+import * as clientManager from '../utils/client-manager';
+import { CommandHelp } from '../types';
 
 /**
  * Creates a template config file for a client
  *
- * @param {string} clientName - Name of the client
- * @param {string} publicKeyPath - Path to the client's public key file
- * @returns {string|null} Path to the created config file or null if failed
+ * @param clientName - Name of the client
+ * @param publicKeyPath - Path to the client's public key file
+ * @returns Path to the created config file or null if creation failed
  */
-function createConfigTemplate(clientName, publicKeyPath) {
+function createConfigTemplate(clientName: string, publicKeyPath: string): string | null {
   try {
     logger.info('Creating configuration template...');
 
@@ -41,7 +43,7 @@ function createConfigTemplate(clientName, publicKeyPath) {
 
     return null;
   } catch (error) {
-    logger.error(`Failed to create config template: ${error.message}`);
+    logger.error(`Failed to create config template: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
@@ -49,13 +51,21 @@ function createConfigTemplate(clientName, publicKeyPath) {
 /**
  * Core key generation function - separated to handle both direct calls and CLI calls
  *
- * @param {string} clientName - Client name for keys
- * @param {string} outputDir - Directory to save keys
- * @param {number} keySize - Size of RSA key in bits
- * @param {boolean} createConfig - Whether to create config template
- * @returns {Object} Generated key paths and fingerprint
+ * @param clientName - Name for the client keys
+ * @param outputDir - Directory where keys will be saved
+ * @param keySize - Size of RSA key in bits
+ * @param createConfig - Whether to create a config template file
+ * @returns Object containing key paths and fingerprint
  */
-function generateClientKeys(clientName, outputDir, keySize, createConfig) {
+function generateClientKeys(
+  clientName: string,
+  outputDir: string,
+  keySize: number,
+  createConfig: boolean
+): {
+  keyPaths: { privateKeyPath: string; publicKeyPath: string },
+  fingerprint: string
+} {
   // Log what we're about to do
   logger.section('RSA Key Pair Generator');
   logger.info(`Generating ${keySize}-bit keys for client: ${clientName}`);
@@ -94,14 +104,19 @@ function generateClientKeys(clientName, outputDir, keySize, createConfig) {
 /**
  * Main implementation for key generation - handles CLI arguments
  *
- * @param {Array} args - Command line arguments
- * @param {readline.Interface} rl - Readline interface
- * @param {Object} cli - Parsed command line options
- * @returns {Promise<Object>} Generated key information
+ * @param cli - Object containing command line flags and arguments
+ * @param rl - Readline interface for user input
+ * @returns Promise resolving to object with key paths and fingerprint
  */
-async function generateKeysImplementation(args, rl, cli) {
+async function generateKeysImplementation(
+  cli: { flags: Record<string, any>, _: string[] },
+  rl: ReadlineInterface
+): Promise<{
+  keyPaths: { privateKeyPath: string; publicKeyPath: string },
+  fingerprint: string
+}> {
   try {
-    // CRITICAL: Extract client name with fallback handling
+    // Extract client name with fallback handling
     let clientName = 'client'; // Default
 
     // Check if name exists in flags and is not undefined/empty
@@ -111,7 +126,7 @@ async function generateKeysImplementation(args, rl, cli) {
 
     // Get other parameters from the double-dash flags or use defaults
     const outputDir = (cli && cli.flags && cli.flags['output-dir']) || dirs.keys;
-    const keySize = parseInt((cli && cli.flags && cli.flags['key-size']) || defaults.keySize, 10);
+    const keySize = parseInt((cli && cli.flags && cli.flags['key-size']) || String(defaults.keySize), 10);
     const createConfig = (cli && cli.flags && (cli.flags['create-config'] === true || cli.flags['create-config'] === 'true')) || false;
 
     // Generate the keys using our core function
@@ -128,17 +143,19 @@ async function generateKeysImplementation(args, rl, cli) {
 
     return result;
   } catch (error) {
-    logger.error(`Error generating keys: ${error.message}`);
+    logger.error(`Error generating keys: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
   }
 }
 
-// Create the command handler with proper help information
+/**
+ * Create the command handler with proper help information
+ */
 const generateKeysHandler = createCommandHandler(
   generateKeysImplementation,
   {
     defaults: {
-      'name': 'client', // Default client name
+      'name': defaults.client,
       'output-dir': dirs.keys,
       'key-size': defaults.keySize,
       'create-config': false
@@ -163,10 +180,10 @@ const generateKeysHandler = createCommandHandler(
         'manager generate-keys --name=admin --key-size=4096',
         'manager generate-keys --name=test-client --create-config'
       ]
-    }
+    } as CommandHelp
   }
 );
 
 // Export the command handler and direct function for programmatic use
-module.exports = generateKeysHandler;
-module.exports.generateClientKeys = generateClientKeys;
+export default generateKeysHandler;
+export { generateClientKeys };

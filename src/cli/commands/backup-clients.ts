@@ -4,24 +4,22 @@
  * Creates backups of the authorized clients database and manages
  * backup rotation to prevent excessive disk usage.
  */
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const { ensureDir } = require('../utils/fs');
-const { generateRandomId } = require('../utils/crypto');
-const { createCommandHandler } = require('../utils/cli');
-const { dirs, files, defaults } = require('../utils/config');
-const logger = require('../utils/logger');
-const clientManager = require('../utils/client-manager');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { Interface as ReadlineInterface } from 'readline';
+import { ensureDir } from '../utils/fs';
+import { generateRandomId } from '../utils/crypto';
+import { createCommandHandler } from '../utils/cli';
+import { dirs, files, defaults } from '../config';
+import logger from '../utils/logger';
+import { listClients } from '../utils/client-manager';
+import { CommandHelp, BackupMetadata } from '../types';
 
 /**
  * Create a backup of the clients database
- *
- * @param {string} clientsFile - Path to the clients database file
- * @param {string} backupDir - Directory to store backups
- * @returns {string|false} Path to the backup file or false if backup failed
  */
-function backupClients(clientsFile, backupDir) {
+function backupClients(clientsFile: string, backupDir: string): string | false {
   try {
     // Check if source file exists
     if (!fs.existsSync(clientsFile)) {
@@ -33,7 +31,7 @@ function backupClients(clientsFile, backupDir) {
     ensureDir(backupDir);
 
     // Get clients using client manager
-    const clients = clientManager.listClients(clientsFile);
+    const clients = listClients(clientsFile);
     if (!clients) {
       logger.error(`Failed to load clients from: ${clientsFile}`);
       return false;
@@ -58,7 +56,7 @@ function backupClients(clientsFile, backupDir) {
     fs.writeFileSync(backupFile, clientsData);
 
     // Create metadata file
-    const metadata = {
+    const metadata: BackupMetadata = {
       timestamp: new Date().toISOString(),
       sourceFile: clientsFile,
       backupFile,
@@ -75,18 +73,15 @@ function backupClients(clientsFile, backupDir) {
 
     return backupFile;
   } catch (error) {
-    logger.error(`Backup failed: ${error.message}`);
+    logger.error(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }
 
 /**
  * Clean up old backups, keeping only the most recent ones
- *
- * @param {string} backupDir - Directory containing backups
- * @param {number} maxBackups - Maximum number of backups to keep
  */
-function cleanupOldBackups(backupDir, maxBackups) {
+function cleanupOldBackups(backupDir: string, maxBackups: number): void {
   try {
     // Ensure backup directory exists
     if (!fs.existsSync(backupDir)) {
@@ -128,22 +123,21 @@ function cleanupOldBackups(backupDir, maxBackups) {
 
     logger.success(`Cleanup complete: ${filesToRemove.length} old backups removed`);
   } catch (error) {
-    logger.error(`Cleanup failed: ${error.message}`);
+    logger.error(`Cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
  * Main implementation for backup clients command
- *
- * @param {Object} cli - Parsed command line arguments
- * @param {readline.Interface} rl - Readline interface
- * @returns {Promise<void>}
  */
-async function backupImplementation(cli, rl) {
+async function backupImplementation(
+  cli: { flags: Record<string, any>, _: string[] },
+  rl: ReadlineInterface
+): Promise<void> {
   // Get only the parameters we actually use
-  const backupDir = cli.flags['backup-dir'];
-  const clientsFile = cli.flags['clients-file'];
-  const maxBackups = parseInt(cli.flags['max-backups'], 10);
+  const backupDir = cli.flags['backup-dir'] as string;
+  const clientsFile = cli.flags['clients-file'] as string;
+  const maxBackups = parseInt(cli.flags['max-backups'] as string, 10);
 
   logger.section('Client Database Backup');
   logger.info(`Clients database: ${clientsFile}`);
@@ -191,9 +185,9 @@ const backupClientsHandler = createCommandHandler(
         'manager backup-clients --max-backups=5',
         'manager backup-clients --clients-file=./custom/path/clients.json'
       ]
-    }
+    } as CommandHelp
   }
 );
 
 // Export the command handler
-module.exports = backupClientsHandler;
+export default backupClientsHandler;

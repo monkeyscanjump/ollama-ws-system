@@ -3,39 +3,34 @@
  *
  * Handles client registration, offline and online modes
  */
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const http = require('http');
-const https = require('https');
-const { loadJson, saveJson, ensureDir } = require('./fs');
-const { generateRandomId } = require('./crypto');
-const { defaults } = require('./config');
-const logger = require('./logger');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import http from 'http';
+import https from 'https';
+import { loadJson, saveJson, ensureDir } from './fs';
+import { generateRandomId } from './crypto';
+import { defaults } from '../config';
+import logger from './logger';
+import { AuthorizedClient } from '../types';
 
 /**
  * Validates a public key format
- *
- * @param {string} publicKey - The public key content
- * @returns {boolean} Whether the key is valid
  */
-function validatePublicKey(publicKey) {
+export function validatePublicKey(publicKey: string): boolean {
   try {
     crypto.createPublicKey(publicKey);
     return true;
   } catch (error) {
-    logger.error(`Invalid public key format: ${error.message}`);
+    logger.error(`Invalid public key format: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }
 
 /**
  * Validates a signature algorithm
- *
- * @param {string} algorithm - The algorithm to validate
- * @returns {boolean} Whether the algorithm is valid
  */
-function validateAlgorithm(algorithm) {
+export function validateAlgorithm(algorithm?: string): boolean {
   if (!algorithm) return true;
 
   try {
@@ -49,15 +44,13 @@ function validateAlgorithm(algorithm) {
 
 /**
  * Registers a client directly in the database (offline mode)
- *
- * @param {string} clientsFile - Path to the clients database file
- * @param {string} name - The client name
- * @param {string} publicKey - The public key content
- * @param {string} [algorithm] - Optional signature algorithm to use
- * @returns {Promise<object>} The client data with clientId
- * @throws {Error} If registration fails
  */
-async function registerClientOffline(clientsFile, name, publicKey, algorithm) {
+export async function registerClientOffline(
+  clientsFile: string,
+  name: string,
+  publicKey: string,
+  algorithm?: string
+): Promise<{ clientId: string }> {
   try {
     // Validate inputs
     if (!validatePublicKey(publicKey)) {
@@ -72,7 +65,7 @@ async function registerClientOffline(clientsFile, name, publicKey, algorithm) {
     const clientId = generateRandomId();
 
     // Create client object
-    const client = {
+    const client: AuthorizedClient = {
       id: clientId,
       name,
       publicKey,
@@ -81,7 +74,7 @@ async function registerClientOffline(clientsFile, name, publicKey, algorithm) {
     };
 
     // Load existing clients
-    let clients = loadJson(clientsFile, true) || [];
+    let clients = loadJson<AuthorizedClient[]>(clientsFile, true) || [];
 
     // Add new client
     clients.push(client);
@@ -94,21 +87,19 @@ async function registerClientOffline(clientsFile, name, publicKey, algorithm) {
     logger.success(`Client registered directly to database at: ${clientsFile}`);
     return { clientId };
   } catch (error) {
-    throw new Error(`Offline registration failed: ${error.message}`);
+    throw new Error(`Offline registration failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
  * Registers a client with the server API (online mode)
- *
- * @param {string} url - The server URL
- * @param {string} name - The client name
- * @param {string} publicKey - The public key content
- * @param {string} [algorithm] - Optional signature algorithm to use
- * @returns {Promise<object>} The server response with clientId
- * @throws {Error} If registration fails
  */
-async function registerClientOnline(url, name, publicKey, algorithm) {
+export async function registerClientOnline(
+  url: string,
+  name: string,
+  publicKey: string,
+  algorithm?: string
+): Promise<any> {
   return new Promise((resolve, reject) => {
     // Prepare request data
     const data = JSON.stringify({
@@ -142,7 +133,7 @@ async function registerClientOnline(url, name, publicKey, algorithm) {
       });
 
       res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
           try {
             const response = JSON.parse(responseData);
             resolve(response);
@@ -166,18 +157,16 @@ async function registerClientOnline(url, name, publicKey, algorithm) {
 
 /**
  * Saves the client configuration to a JSON file
- *
- * @param {string} clientId - The client ID returned from the server
- * @param {string} name - The client name
- * @param {string} publicKeyPath - Path to the public key file
- * @param {string} serverUrl - The server URL
- * @param {string} [algorithm] - The signature algorithm used
- * @returns {string|null} Path to the saved configuration file or null if save failed
  */
-function saveClientConfig(clientId, name, publicKeyPath, serverUrl, algorithm) {
+export function saveClientConfig(
+  clientId: string,
+  name: string,
+  publicKeyPath: string,
+  serverUrl: string,
+  algorithm?: string
+): string | null {
   try {
     // Derive private key path from public key path
-    // Resolve path to ensure it's absolute
     const resolvedKeyPath = path.resolve(process.cwd(), publicKeyPath);
     const privateKeyPath = resolvedKeyPath.replace('.pub', '.pem');
     const configPath = path.join(path.dirname(resolvedKeyPath), `${name}_config.json`);
@@ -199,18 +188,15 @@ function saveClientConfig(clientId, name, publicKeyPath, serverUrl, algorithm) {
       return null;
     }
   } catch (error) {
-    logger.error(`Failed to save client configuration: ${error.message}`);
+    logger.error(`Failed to save client configuration: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
 
 /**
  * Reads a public key from the specified file path
- *
- * @param {string} keyPath - Path to the public key file
- * @returns {string|null} The public key content or null if error
  */
-function readPublicKey(keyPath) {
+export function readPublicKey(keyPath: string): string | null {
   if (!keyPath) {
     return null;
   }
@@ -222,19 +208,18 @@ function readPublicKey(keyPath) {
 
     return fs.readFileSync(resolvedPath, 'utf8');
   } catch (error) {
-    logger.error(`Error reading key file: ${error.message}`);
+    logger.error(`Error reading key file: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
 
 /**
  * Find a client by ID or name
- *
- * @param {Array<Object>} clients - Array of client objects
- * @param {string} identifier - Client ID or name to find
- * @returns {Object|undefined} The client object if found, undefined otherwise
  */
-function findClient(clients, identifier) {
+export function findClient(
+  clients: AuthorizedClient[],
+  identifier: string
+): AuthorizedClient | undefined {
   // Try to find by ID first
   const clientById = clients.find(c => c.id === identifier);
   if (clientById) return clientById;
@@ -245,18 +230,16 @@ function findClient(clients, identifier) {
 
 /**
  * Revoke a client's access by removing it from the database
- *
- * @param {string} clientsFile - Path to the clients database file
- * @param {string} identifier - Client ID or name to revoke
- * @param {string} revokedDir - Directory to save revoked client backups
- * @param {string} [reason] - Reason for revocation
- * @returns {Promise<Object|null>} The revoked client or null if failed
- * @throws {Error} If there's an unexpected error during revocation
  */
-async function revokeClient(clientsFile, identifier, revokedDir, reason = 'Manual revocation via CLI tool') {
+export async function revokeClient(
+  clientsFile: string,
+  identifier: string,
+  revokedDir: string,
+  reason = 'Manual revocation via CLI tool'
+): Promise<AuthorizedClient | null> {
   try {
     // Load clients
-    const clients = loadJson(clientsFile);
+    const clients = loadJson<AuthorizedClient[]>(clientsFile);
 
     if (!clients || clients.length === 0) {
       logger.info('No clients registered.');
@@ -299,18 +282,15 @@ async function revokeClient(clientsFile, identifier, revokedDir, reason = 'Manua
       return null;
     }
   } catch (error) {
-    logger.error(`Error revoking client: ${error.message}`);
+    logger.error(`Error revoking client: ${error instanceof Error ? error.message : String(error)}`);
     throw error; // Changed to throw error for consistency
   }
 }
 
 /**
  * Format date string for display
- *
- * @param {string} dateString - ISO date string to format
- * @returns {string} Formatted date string
  */
-function formatDate(dateString) {
+export function formatDate(dateString?: string): string {
   if (!dateString) return 'Never';
 
   const date = new Date(dateString);
@@ -319,11 +299,8 @@ function formatDate(dateString) {
 
 /**
  * Format size of key for display
- *
- * @param {string} key - PEM-encoded key
- * @returns {number} Approximate size of the key in bytes
  */
-function formatKeySize(key) {
+export function formatKeySize(key: string): number {
   const lines = key.split('\n').filter(line => !line.includes('BEGIN') && !line.includes('END'));
   const base64Length = lines.join('').length;
   return Math.floor(base64Length * 0.75);  // Approximate size of decoded base64
@@ -331,36 +308,21 @@ function formatKeySize(key) {
 
 /**
  * List all clients in the database
- *
- * @param {string} clientsFile - Path to the clients database
- * @returns {Array|null} Array of clients or null if error
  */
-function listClients(clientsFile) {
+export function listClients(clientsFile: string): AuthorizedClient[] | null {
   try {
-    const clients = loadJson(clientsFile);
+    const clients = loadJson<AuthorizedClient[]>(clientsFile);
 
     if (!clients || !Array.isArray(clients)) {
       return null;
     }
 
     // Sort by creation date (newest first)
-    return clients.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return clients.sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   } catch (error) {
-    logger.error(`Error listing clients: ${error.message}`);
+    logger.error(`Error listing clients: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
-
-module.exports = {
-  validatePublicKey,
-  validateAlgorithm,
-  registerClientOffline,
-  registerClientOnline,
-  saveClientConfig,
-  readPublicKey,
-  findClient,
-  revokeClient,
-  formatDate,
-  formatKeySize,
-  listClients
-};

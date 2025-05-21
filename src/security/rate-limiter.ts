@@ -161,7 +161,7 @@ class RateLimiter {
     }
 
     if (removedRecords > 0) {
-      logger.debug(`Cleaned up ${removedRecords} expired rate limit records`);
+      logger.info(`Cleaned up ${removedRecords} expired rate limit records`);
     }
   }
 

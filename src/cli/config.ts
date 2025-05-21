@@ -1,7 +1,7 @@
 /**
  * Common configuration values for server management scripts
  */
-const path = require('path');
+import path from 'path';
 
 // Root project directory
 const projectRoot = path.resolve(__dirname, '../..');
@@ -21,13 +21,14 @@ const files = {
 
 // Default values
 const defaults = {
+  client: 'client',
   maxBackups: 10,
   signatureAlgorithm: 'SHA256',
   keySize: 2048,
   serverUrl: 'http://localhost:3000'
 };
 
-module.exports = {
+export {
   dirs,
   files,
   defaults,

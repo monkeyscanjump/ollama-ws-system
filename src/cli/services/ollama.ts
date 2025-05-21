@@ -3,13 +3,15 @@
  *
  * Configuration and setup for Ollama language model integration
  */
-const { prompt } = require('../utils/cli');
-const logger = require('../utils/logger');
+import { Interface as ReadlineInterface } from 'readline';
+import { prompt } from '../utils/cli';
+import logger from '../utils/logger';
+import { Service } from '../types';
 
 /**
- * Service metadata and configuration
+ * Service definition for Ollama integration
  */
-module.exports = {
+const ollamaService: Service = {
   // Service identity
   id: 'ollama',
   name: 'Ollama LLM Integration',
@@ -22,8 +24,8 @@ module.exports = {
    * Get default value for an environment variable
    * This ensures defaults are used when values are empty/not provided
    */
-  getDefaultValue(variableName) {
-    const defaults = {
+  getDefaultValue(variableName: string): string {
+    const defaults: Record<string, string> = {
       'OLLAMA_API_URL': 'http://localhost:11434',
       'OLLAMA_DEFAULT_MODEL': 'llama2'
     };
@@ -34,8 +36,8 @@ module.exports = {
   /**
    * Get description for environment variables (shown in .env file)
    */
-  getVariableDescription(variableName) {
-    const descriptions = {
+  getVariableDescription(variableName: string): string[] | null {
+    const descriptions: Record<string, string[]> = {
       'OLLAMA_API_URL': [
         'Connection URL for the Ollama API server',
         '- Default for standalone deployments: http://localhost:11434',
@@ -59,7 +61,10 @@ module.exports = {
   /**
    * Interactive configuration flow
    */
-  async configure(rl, existingConfig = {}) {
+  async configure(
+    rl: ReadlineInterface,
+    existingConfig: Record<string, string> = {}
+  ): Promise<Record<string, string>> {
     logger.section('Ollama Integration Setup');
     logger.info('Ollama is a lightweight local large language model server');
     logger.info('This integration allows the WebSocket server to use Ollama for text generation');
@@ -67,6 +72,7 @@ module.exports = {
 
     // Get API URL with default
     const defaultApiUrl = existingConfig.OLLAMA_API_URL || this.getDefaultValue('OLLAMA_API_URL');
+    // Use defaultApiUrl as the default value when prompt is empty
     const apiUrl = await prompt(
       rl,
       `Enter Ollama API URL [${defaultApiUrl}]: `,
@@ -84,6 +90,7 @@ module.exports = {
 
     // Get default model
     const defaultModel = existingConfig.OLLAMA_DEFAULT_MODEL || this.getDefaultValue('OLLAMA_DEFAULT_MODEL');
+    // Use defaultModel as the default value when prompt is empty
     const model = await prompt(
       rl,
       `Enter default Ollama model to use [${defaultModel}]: `,
@@ -99,7 +106,7 @@ module.exports = {
   /**
    * Post-setup instructions shown to the user
    */
-  getInstructions(config) {
+  getInstructions(config: Record<string, string>): string[] {
     return [
       'To use Ollama:',
       '1. Install Ollama from https://ollama.ai',
@@ -111,7 +118,7 @@ module.exports = {
   /**
    * Parse configuration from command line arguments
    */
-  parseCliConfig(flags) {
+  parseCliConfig(flags: Record<string, any>): Record<string, string> | null {
     if (flags['ollama-api'] && flags['ollama-model']) {
       return {
         OLLAMA_API_URL: flags['ollama-api'],
@@ -133,7 +140,7 @@ module.exports = {
   /**
    * CLI flag definitions for this service
    */
-  getCliFlags() {
+  getCliFlags(): Record<string, { description: string, default?: string }> {
     return {
       'ollama-api': {
         description: 'Ollama API URL',
@@ -146,3 +153,5 @@ module.exports = {
     };
   }
 };
+
+export default ollamaService;

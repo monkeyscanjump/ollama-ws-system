@@ -4,21 +4,43 @@
  * Scans the source code for environment variable usage and compares it against
  * the centralized environment template to identify missing variables.
  */
-const fs = require('fs');
-const path = require('path');
-const logger = require('./logger');
-const templateModule = require('./env-template');
+import fs from 'fs';
+import path from 'path';
+import { createCommandHandler } from '../utils/cli';
+import logger from '../utils/logger';
+import * as templateModule from '../utils/env-template';
+import { getAvailableServices } from '../services';
+import { CommandHelp } from '../types';
+
+/**
+ * Determines the source code root directory
+ * Works in both ts-node and compiled JS environments
+ */
+function getSourceRoot(): string {
+  // Check if we're running in ts-node or compiled JS
+  const isTsNode = process.env.TS_NODE_DEV === 'true' || process.argv[0].includes('ts-node');
+
+  // In ts-node, the source is at the same level
+  // In compiled JS, the source is one level up from dist/cli/commands
+  if (isTsNode) {
+    // When running with ts-node, source is at ./src
+    return path.join(process.cwd(), 'src');
+  } else {
+    // When running compiled, we need to access ../../../src from dist/cli/commands
+    return path.join(__dirname, '../../../src');
+  }
+}
 
 /**
  * Scans source code for environment variable usage
  *
- * @returns {string[]} Array of environment variables found in code
+ * @returns Array of environment variable names found in source code
  */
-function scanSourceForEnvVars() {
-  const srcDir = path.join(__dirname, '../../src');
+export function scanSourceForEnvVars(): string[] {
+  const srcDir = getSourceRoot();
 
   // Enhanced patterns to catch all env variable usage methods
-  const envVarPatterns = [
+  const envVarPatterns: RegExp[] = [
     // Standard process.env.VAR_NAME
     /process\.env\.([A-Z0-9_]+)/g,
     // Destructuring: const { VAR_NAME } = process.env
@@ -33,11 +55,21 @@ function scanSourceForEnvVars() {
     /parse(?:NumericEnv)\s*\(\s*['"]([A-Z0-9_]+)['"]/g
   ];
 
-  const foundVars = new Set();
-  const skipVars = new Set(['NODE_ENV', 'PATH', 'PWD', 'npm_config_node_version']);
+  const foundVars = new Set<string>();
+  const skipVars = new Set([
+    'NODE_ENV',
+    'PATH',
+    'PWD',
+    'npm_config_node_version',
+    'TS_NODE_DEV',
+    'VAR_NAME'
+  ]);
+
+  // Log the source directory being scanned
+  logger.info(`Scanning source directory: ${srcDir}`);
 
   // Recursive scan function
-  function scanDir(dirPath) {
+  function scanDir(dirPath: string): void {
     try {
       // Read directory contents
       const files = fs.readdirSync(dirPath);
@@ -80,7 +112,7 @@ function scanSourceForEnvVars() {
         }
       }
     } catch (err) {
-      logger.warn(`Error scanning directory ${dirPath}: ${err.message}`);
+      logger.warn(`Error scanning directory ${dirPath}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -96,14 +128,17 @@ function scanSourceForEnvVars() {
 /**
  * Get service-defined environment variables
  *
- * @returns {string[]} Array of service-defined variables
+ * @returns Array of environment variables defined by services
  */
-function getServiceDefinedVars() {
-  const serviceVars = [];
+export function getServiceDefinedVars(): string[] {
+  const serviceVars: string[] = [];
 
   try {
-    const serviceRegistry = require('../services');
-    const services = serviceRegistry.getAvailableServices();
+    // Use the imported services module directly
+    const services = getAvailableServices();
+
+    // Log available services for debugging
+    logger.info(`Found ${Object.keys(services).length} services`);
 
     for (const serviceId in services) {
       const service = services[serviceId];
@@ -112,7 +147,7 @@ function getServiceDefinedVars() {
       }
     }
   } catch (err) {
-    logger.warn(`Error getting service variables: ${err.message}`);
+    logger.warn(`Error getting service variables: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   return serviceVars;
@@ -120,8 +155,10 @@ function getServiceDefinedVars() {
 
 /**
  * Compares source code env vars with template
+ *
+ * @returns Boolean indicating if all variables are defined
  */
-function compareWithTemplate() {
+export function compareWithTemplate(): boolean {
   // Get variables used in code
   const codeVars = scanSourceForEnvVars();
 
@@ -174,13 +211,38 @@ function compareWithTemplate() {
   }
 }
 
-// Run automatically if called directly
-if (require.main === module) {
+/**
+ * Command handler implementation for scan-env
+ *
+ * @param cli - Parsed command line arguments
+ * @returns Promise that resolves when scan is complete
+ */
+async function scanEnvImplementation(
+  cli: { flags: Record<string, any>, _: string[] }
+): Promise<void> {
+  logger.section('Environment Variable Scanner');
+
   compareWithTemplate();
 }
 
-module.exports = {
-  scanSourceForEnvVars,
-  getServiceDefinedVars,
-  compareWithTemplate
+/**
+ * Command help documentation
+ */
+const cmdHelp: CommandHelp = {
+  title: 'Environment Variable Scanner',
+  command: 'scan-env',
+  description: [
+    'Scans source code for references to environment variables and',
+    'verifies they are properly defined in the central environment',
+    'template. Helps maintain consistent environment configuration.'
+  ],
+  examples: [
+    'manager scan-env'
+  ],
+  options: []
 };
+
+/**
+ * Export the command handler
+ */
+export default createCommandHandler(scanEnvImplementation, { help: cmdHelp });

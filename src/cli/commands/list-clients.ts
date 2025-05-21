@@ -4,22 +4,23 @@
  * Lists all registered clients with the WebSocket system.
  * Can display basic or detailed information about each client.
  */
-const { createCommandHandler, formatTable } = require('../utils/cli');
-const { generateKeyFingerprint } = require('../utils/crypto');
-const { files } = require('../utils/config');
-const logger = require('../utils/logger');
-const clientManager = require('../utils/client-manager');
+import { Interface as ReadlineInterface } from 'readline';
+import { createCommandHandler, formatTable } from '../utils/cli';
+import { generateKeyFingerprint } from '../utils/crypto';
+import { files } from '../config';
+import logger from '../utils/logger';
+import * as clientManager from '../utils/client-manager';
+import { CommandHelp } from '../types';
 
 /**
  * Main implementation for the list-clients command
- *
- * @param {Object} cli - Parsed command line arguments
- * @param {readline.Interface} rl - Readline interface
- * @returns {Promise<void>}
  */
-async function listImplementation(cli, rl) {
+async function listImplementation(
+  cli: { flags: Record<string, any>, _: string[] },
+  rl: ReadlineInterface
+): Promise<void> {
   // Get client file path and detailed flag
-  const clientsFile = cli.flags['clients-file'];
+  const clientsFile = cli.flags['clients-file'] as string;
   const detailed = cli.flags['detailed'] === true || cli.flags['detailed'] === 'true';
 
   logger.section('Client Listing');
@@ -80,12 +81,21 @@ async function listImplementation(cli, rl) {
         if (client.lastIP) {
           logger.info(`  Last IP: ${client.lastIP}`);
         }
+
+        // Add support for tags and allowedIPs which are in the TypeScript interface
+        if (client.tags && client.tags.length > 0) {
+          logger.info(`  Tags: ${client.tags.join(', ')}`);
+        }
+
+        if (client.allowedIPs && client.allowedIPs.length > 0) {
+          logger.info(`  Allowed IPs: ${client.allowedIPs.join(', ')}`);
+        }
       });
     }
 
     logger.log('');
   } catch (error) {
-    logger.error(`Error listing clients: ${error.message}`);
+    logger.error(`Error listing clients: ${error instanceof Error ? error.message : String(error)}`);
     throw error;
   }
 }
@@ -116,9 +126,9 @@ const listClientsHandler = createCommandHandler(
         'manager list-clients --detailed',
         'manager list-clients --clients-file=./custom/path/clients.json'
       ]
-    }
+    } as CommandHelp
   }
 );
 
 // Export the command handler
-module.exports = listClientsHandler;
+export default listClientsHandler;

@@ -4,13 +4,19 @@
  * Central definition of all environment variables with validation, descriptions,
  * and default values. This is the single source of truth for environment configuration.
  */
-const path = require('path');
+import path from 'path';
+import { EnvSection, EnvTemplate, EnvVariable } from '../types';
+
+/**
+ * Validation function type
+ */
+type ValidatorFunction = (value: string) => true | string;
 
 /**
  * Validation functions for environment variables
  */
-const validators = {
-  port: (value) => {
+export const validators: Record<string, ValidatorFunction> = {
+  port: (value: string): true | string => {
     const port = parseInt(value, 10);
     if (isNaN(port) || port < 1 || port > 65535) {
       return 'Port must be a number between 1 and 65535';
@@ -18,7 +24,7 @@ const validators = {
     return true;
   },
 
-  logLevel: (value) => {
+  logLevel: (value: string): true | string => {
     const validLevels = ['error', 'warn', 'info', 'debug', 'trace'];
     if (!validLevels.includes(value.toLowerCase())) {
       return `Log level must be one of: ${validLevels.join(', ')}`;
@@ -26,7 +32,7 @@ const validators = {
     return true;
   },
 
-  timeout: (value) => {
+  timeout: (value: string): true | string => {
     const timeout = parseInt(value, 10);
     if (isNaN(timeout) || timeout < 0) {
       return 'Timeout must be a positive number';
@@ -34,7 +40,7 @@ const validators = {
     return true;
   },
 
-  positiveInteger: (value) => {
+  positiveInteger: (value: string): true | string => {
     const num = parseInt(value, 10);
     if (isNaN(num) || num < 1) {
       return 'Value must be a positive integer';
@@ -42,14 +48,14 @@ const validators = {
     return true;
   },
 
-  boolean: (value) => {
+  boolean: (value: string): true | string => {
     if (value !== 'true' && value !== 'false') {
       return 'Value must be either "true" or "false"';
     }
     return true;
   },
 
-  directory: (value) => {
+  directory: (value: string): true | string => {
     // Simple validation - could be enhanced to check if path is valid
     if (!value || value.trim() === '') {
       return 'Directory path cannot be empty';
@@ -57,7 +63,7 @@ const validators = {
     return true;
   },
 
-  nodeEnv: (value) => {
+  nodeEnv: (value: string): true | string => {
     const validEnvs = ['development', 'production', 'test'];
     if (!validEnvs.includes(value)) {
       return `Node environment must be one of: ${validEnvs.join(', ')}`;
@@ -69,7 +75,7 @@ const validators = {
 /**
  * Environment template definition
  */
-const ENV_TEMPLATE = {
+export const ENV_TEMPLATE: EnvTemplate = {
   sections: [
     {
       id: 'server',
@@ -184,12 +190,12 @@ const ENV_TEMPLATE = {
           ],
           default: 'SHA256',
           prompt: 'Enter default signature algorithm',
-          validate: (value) => {
+          validate: (value: string): true | string => {
             try {
               require('crypto').createVerify(value);
               return true;
             } catch (e) {
-              return `Invalid signature algorithm: ${e.message}`;
+              return `Invalid signature algorithm: ${e instanceof Error ? e.message : String(e)}`;
             }
           }
         }
@@ -220,11 +226,9 @@ const ENV_TEMPLATE = {
 
 /**
  * Get a flat list of all environment variables defined in the template
- *
- * @returns {Object} Map of variable names to their definitions
  */
-function getAllVariables() {
-  const variables = {};
+export function getAllVariables(): Record<string, EnvVariable> {
+  const variables: Record<string, EnvVariable> = {};
 
   // Loop through all sections
   for (const section of ENV_TEMPLATE.sections) {
@@ -239,23 +243,16 @@ function getAllVariables() {
 
 /**
  * Check if a variable exists in the template
- *
- * @param {string} name - Variable name
- * @returns {boolean} Whether the variable exists
  */
-function hasVariable(name) {
+export function hasVariable(name: string): boolean {
   const variables = getAllVariables();
   return !!variables[name];
 }
 
 /**
  * Validate a value for a specific variable
- *
- * @param {string} name - Variable name
- * @param {string} value - Value to validate
- * @returns {true|string} True if valid, error message if invalid
  */
-function validateVariable(name, value) {
+export function validateVariable(name: string, value: string): true | string {
   const variables = getAllVariables();
   const variable = variables[name];
 
@@ -272,16 +269,13 @@ function validateVariable(name, value) {
 
 /**
  * Generate suggested additions to the template for new environment variables
- *
- * @param {string[]} newVars - Array of new variable names
- * @returns {string} JavaScript code with suggested additions
  */
-function generateTemplateAdditions(newVars) {
+export function generateTemplateAdditions(newVars: string[]): string {
   if (!newVars || newVars.length === 0) {
     return 'No new variables to add.';
   }
 
-  let code = '// Suggested additions to env-template.js:\n\n';
+  let code = '// Suggested additions to env-template.ts:\n\n';
   code += '{\n';
   code += '  id: \'new_section\',\n';
   code += '  title: \'NEW VARIABLES\',\n';
@@ -305,12 +299,3 @@ function generateTemplateAdditions(newVars) {
 
   return code;
 }
-
-module.exports = {
-  ENV_TEMPLATE,
-  validators,
-  getAllVariables,
-  hasVariable,
-  validateVariable,
-  generateTemplateAdditions
-};

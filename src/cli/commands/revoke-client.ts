@@ -5,25 +5,26 @@
  * them from accessing the WebSocket server. Creates a backup
  * of revoked client data for audit purposes.
  */
-const { confirm, prompt, createCommandHandler } = require('../utils/cli');
-const { dirs, files } = require('../utils/config');
-const logger = require('../utils/logger');
-const clientManager = require('../utils/client-manager');
+import { Interface as ReadlineInterface } from 'readline';
+import { confirm, prompt, createCommandHandler } from '../utils/cli';
+import { dirs, files } from '../config';
+import logger from '../utils/logger';
+import { findClient, listClients, revokeClient } from '../utils/client-manager';
+import { AuthorizedClient, CommandHelp } from '../types';
 
 /**
  * Process the revocation for a client
- *
- * @param {string} clientsFile - Path to the clients database file
- * @param {string} identifier - Client ID or name to revoke
- * @param {string} revokedDir - Directory to save revoked client backups
- * @param {boolean} force - Skip confirmation prompt if true
- * @param {readline.Interface} rl - Readline interface for prompts
- * @returns {Promise<Object|null>} The revoked client object or null if failed
  */
-async function processRevocation(clientsFile, identifier, revokedDir, force, rl) {
+async function processRevocation(
+  clientsFile: string,
+  identifier: string,
+  revokedDir: string,
+  force: boolean,
+  rl: ReadlineInterface
+): Promise<AuthorizedClient | null> {
   try {
     // Load client database to check if client exists
-    const clients = clientManager.listClients(clientsFile);
+    const clients = listClients(clientsFile);
 
     if (!clients || clients.length === 0) {
       logger.info('No clients registered.');
@@ -31,7 +32,7 @@ async function processRevocation(clientsFile, identifier, revokedDir, force, rl)
     }
 
     // Find the client using client manager
-    const client = clientManager.findClient(clients, identifier);
+    const client = findClient(clients, identifier);
 
     if (!client) {
       logger.warn(`No client found with ID or name: ${identifier}`);
@@ -53,7 +54,7 @@ async function processRevocation(clientsFile, identifier, revokedDir, force, rl)
     }
 
     // Use client manager to revoke the client
-    const result = await clientManager.revokeClient(clientsFile, identifier, revokedDir);
+    const result = await revokeClient(clientsFile, identifier, revokedDir);
 
     if (!result) {
       logger.error('Failed to revoke client. See error messages above for details.');
@@ -62,26 +63,25 @@ async function processRevocation(clientsFile, identifier, revokedDir, force, rl)
 
     return result;
   } catch (error) {
-    logger.error(`Error during revocation process: ${error.message}`);
+    logger.error(`Error during revocation process: ${error instanceof Error ? error.message : String(error)}`);
     throw error; // Changed to throw instead of return false for consistency
   }
 }
 
 /**
  * Main revocation implementation
- *
- * @param {Object} cli - Parsed command line arguments
- * @param {readline.Interface} rl - Readline interface
- * @returns {Promise<void>}
  */
-async function revokeImplementation(cli, rl) {
+async function revokeImplementation(
+  cli: { flags: Record<string, any>, _: string[] },
+  rl: ReadlineInterface
+): Promise<void> {
   // Get options from arguments
-  const clientsFile = cli.flags['clients-file'];
-  const revokedDir = cli.flags['revoked-dir'];
+  const clientsFile = cli.flags['clients-file'] as string;
+  const revokedDir = cli.flags['revoked-dir'] as string;
   const force = cli.flags['force'] === true || cli.flags['force'] === 'true';
 
   // Get client identifier from args or prompt
-  let identifier = cli.flags['client-id'];
+  let identifier = cli.flags['client-id'] as string;
 
   if (!identifier) {
     logger.section('Client Revocation');
@@ -136,9 +136,9 @@ const revokeClientHandler = createCommandHandler(
         'manager revoke-client --client-id=admin',
         'manager revoke-client --client-id=1234abcd --force'
       ]
-    }
+    } as CommandHelp
   }
 );
 
 // Export the command handler
-module.exports = revokeClientHandler;
+export default revokeClientHandler;

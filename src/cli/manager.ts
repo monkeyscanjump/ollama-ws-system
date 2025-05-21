@@ -5,20 +5,24 @@
  * Unified command line interface for managing the WebSocket system.
  * Provides access to all management functions through a single entry point.
  */
-const { validateArgumentSyntax } = require('./utils/cli');
-const logger = require('./utils/logger');
+import { validateArgumentSyntax } from './utils/cli';
+import logger from './utils/logger';
+import { CommandRegistry } from './types';
 
 // Import command handlers
-const setupServer = require('./commands/setup');
-const generateKeys = require('./commands/generate-keys');
-const registerClient = require('./commands/register-client');
-const listClients = require('./commands/list-clients');
-const revokeClient = require('./commands/revoke-client');
-const backupClients = require('./commands/backup-clients');
-const configureEnv = require('./commands/configure-env');
+import listClients from './commands/list-clients';
+import backupClients from './commands/backup-clients';
+import revokeClient from './commands/revoke-client';
+import setupServer from './commands/setup';
+import generateKeys from './commands/generate-keys';
+import registerClient from './commands/register-client';
+import configureEnv from './commands/configure-env';
+import scanEnv from './commands/scan-env';
 
-// Command definitions with updated usage text
-const commands = {
+/**
+ * Registry of all available commands with their handlers and descriptions
+ */
+const commands: CommandRegistry = {
   'setup': {
     handler: setupServer,
     description: 'Initialize the server environment',
@@ -53,13 +57,18 @@ const commands = {
     handler: configureEnv,
     description: 'Configure environment settings',
     usage: 'manager configure-env [--port=PORT] [--host=HOST] [--enable-ollama] [--force]'
+  },
+  'scan-env': {
+    handler: scanEnv,
+    description: 'Scan environment variables in source code',
+    usage: 'manager scan-env'
   }
 };
 
 /**
  * Display general help information
  */
-function showHelp() {
+function showHelp(): void {
   logger.section('WebSocket System Manager');
   logger.log('Usage: manager <command> [--options]');
   logger.log('');
@@ -79,7 +88,6 @@ function showHelp() {
   logger.log('');
   logger.log('Examples:');
   logger.log('  manager setup --admin-name=admin');
-  // Updated example to use --online instead of --offline
   logger.log('  manager register-client --online --name=my-client --key-path=./keys/my_key.pub');
   logger.log('  manager list-clients --detailed');
   logger.log('  manager revoke-client --client-id=1234abcd');
@@ -87,8 +95,10 @@ function showHelp() {
 
 /**
  * Main function to parse command and execute the appropriate handler
+ *
+ * @returns Promise that resolves when command execution is complete
  */
-async function main() {
+async function main(): Promise<void> {
   // Get all arguments after the script name
   const args = process.argv.slice(2);
 
@@ -128,13 +138,18 @@ async function main() {
   }
 
   try {
-    // Execute the command handler
+    // Execute the command handler - no readline interface needed
     await command.handler(commandArgs);
   } catch (error) {
-    logger.error(`Command failed: ${error.message}`);
+    logger.error(`Command failed: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 }
 
-// Execute the script
-main();
+/**
+ * Execute the script with error handling
+ */
+main().catch(error => {
+  logger.error(`Unhandled error: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+});

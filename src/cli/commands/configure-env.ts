@@ -4,35 +4,50 @@
  * Generates a comprehensive .env file based on templates and user input.
  * Uses the centralized environment template for configuration.
  */
-const fs = require('fs');
-const path = require('path');
-const { confirm, prompt, createCommandHandler } = require('../utils/cli');
-const { projectRoot } = require('../utils/config');
-const logger = require('../utils/logger');
-const serviceRegistry = require('../services');
-const { ENV_TEMPLATE, validateVariable } = require('../utils/env-template');
+import fs from 'fs';
+import path from 'path';
+import { Interface as ReadlineInterface } from 'readline';
+import { confirm, prompt, createCommandHandler } from '../utils/cli';
+import { projectRoot } from '../config';
+import logger from '../utils/logger';
+import { getAvailableServices } from '../services';
+import { ENV_TEMPLATE, validateVariable } from '../utils/env-template';
+import { EnvSection, EnvTemplate, CommandHelp, CommandOption } from '../types';
 
 /**
  * Extract existing configuration from .env file
  *
- * @param {string} envPath - Path to .env file
- * @returns {Object} Extracted configuration values
+ * @param envPath - Path to the .env file
+ * @returns Object with key-value pairs from the .env file
  */
-function extractExistingConfig(envPath) {
+function extractExistingConfig(envPath: string): Record<string, string> {
   if (!fs.existsSync(envPath)) {
     return {};
   }
 
   const envContent = fs.readFileSync(envPath, 'utf8');
-  const config = {};
+  const config: Record<string, string> = {};
 
   // Parse .env file line by line
   const lines = envContent.split('\n');
   for (const line of lines) {
-    const match = line.match(/^([^=]+)=(.*)$/);
+    // Skip empty lines and comment lines
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('#')) {
+      continue;
+    }
+
+    const match = trimmedLine.match(/^([^=]+)=(.*)$/);
     if (match) {
       const key = match[1].trim();
-      const value = match[2].trim();
+      let value = match[2].trim();
+
+      // Handle quoted values
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.substring(1, value.length - 1);
+      }
+
       config[key] = value;
     }
   }
@@ -43,12 +58,16 @@ function extractExistingConfig(envPath) {
 /**
  * Generate the environment file content based on the template and configured values
  *
- * @param {Object} template - Environment template with sections and variables
- * @param {Object} configValues - Configured values for variables
- * @param {Object} enabledServices - Enabled service configurations
- * @returns {string} Generated environment file content
+ * @param template - The environment variable template
+ * @param configValues - The configured values for environment variables
+ * @param enabledServices - Configuration for enabled services
+ * @returns Formatted .env file content as a string
  */
-function generateEnvContent(template, configValues, enabledServices = {}) {
+function generateEnvContent(
+  template: EnvTemplate,
+  configValues: Record<string, string>,
+  enabledServices: Record<string, Record<string, string>> = {}
+): string {
   let content = '';
 
   // Process each section in the template
@@ -67,13 +86,16 @@ function generateEnvContent(template, configValues, enabledServices = {}) {
     for (const variable of section.variables) {
       // Add variable description
       if (variable.description) {
-        for (const line of variable.description) {
-          content += `# ${line}\n`;
+        if (Array.isArray(variable.description)) {
+          for (const line of variable.description) {
+            content += `# ${line}\n`;
+          }
+        } else {
+          content += `# ${variable.description}\n`;
         }
       }
 
       // Add the variable assignment with its value
-      // FIX: Check for empty string values and use default in that case
       const value = configValues[variable.name] !== undefined && configValues[variable.name] !== ''
         ? configValues[variable.name]
         : variable.default;
@@ -83,7 +105,7 @@ function generateEnvContent(template, configValues, enabledServices = {}) {
   }
 
   // Add service-specific variables
-  const availableServices = serviceRegistry.getAvailableServices();
+  const availableServices = getAvailableServices();
 
   for (const serviceId in enabledServices) {
     const service = availableServices[serviceId];
@@ -110,12 +132,15 @@ function generateEnvContent(template, configValues, enabledServices = {}) {
         service.getVariableDescription(key) : null;
 
       if (description) {
-        for (const line of description) {
-          content += `# ${line}\n`;
+        if (Array.isArray(description)) {
+          for (const line of description) {
+            content += `# ${line}\n`;
+          }
+        } else {
+          content += `# ${description}\n`;
         }
       }
 
-      // FIX: Check for empty string values here too
       const value = serviceConfig[key] !== undefined && serviceConfig[key] !== ''
         ? serviceConfig[key]
         : (service.getDefaultValue ? service.getDefaultValue(key) : '');
@@ -130,21 +155,27 @@ function generateEnvContent(template, configValues, enabledServices = {}) {
 /**
  * Configure values for a section's variables through prompts or CLI flags
  *
- * @param {Object} section - Section containing variables to configure
- * @param {Object} existingConfig - Existing configuration values
- * @param {Object} cliFlags - Command line flags
- * @param {readline.Interface} rl - Readline interface
- * @returns {Promise<Object>} Configured values for variables
+ * @param section - The section to configure
+ * @param existingConfig - Existing configuration values
+ * @param cliFlags - Command line flags
+ * @param rl - Readline interface for user input
+ * @returns Promise resolving to configured values for the section
  */
-async function configureSection(section, existingConfig, cliFlags, rl) {
-  const result = {};
+async function configureSection(
+  section: EnvSection,
+  existingConfig: Record<string, string>,
+  cliFlags: Record<string, any>,
+  rl: ReadlineInterface
+): Promise<Record<string, string>> {
+  const result: Record<string, string> = {};
 
   // Process each variable in the section
   for (const variable of section.variables) {
     // Check if value is provided via CLI flag
-    if (cliFlags[variable.name.toLowerCase()]) {
+    const flagName = variable.name.toLowerCase();
+    if (cliFlags[flagName]) {
       // Validate CLI provided value
-      const value = cliFlags[variable.name.toLowerCase()];
+      const value = cliFlags[flagName];
       if (variable.validate) {
         const validationResult = variable.validate(value);
         if (validationResult !== true) {
@@ -172,7 +203,7 @@ async function configureSection(section, existingConfig, cliFlags, rl) {
 
     // Prompt for value with validation
     let isValid = false;
-    let value;
+    let value = ''; // Initialize value here to fix "used before assigned" error
 
     while (!isValid) {
       const promptText = `${variable.prompt} [${defaultValue}]: `;
@@ -204,13 +235,14 @@ async function configureSection(section, existingConfig, cliFlags, rl) {
 /**
  * Main environment configuration implementation
  *
- * @param {Array} args - Command line arguments
- * @param {readline.Interface} rl - Readline interface
- * @param {Object} cli - Parsed command line options
- * @returns {Promise<void>}
+ * @param cli - Command line arguments and flags
+ * @param rl - Readline interface for user input
+ * @returns Promise that resolves when configuration is complete
  */
-async function configureEnvImplementation(args, rl, cli) {
-  if (!cli) cli = { flags: {} };
+async function configureEnvImplementation(
+  cli: { flags: Record<string, any>, _: string[] },
+  rl: ReadlineInterface
+): Promise<void> {
   if (!cli.flags) cli.flags = {};
 
   // Get options from command line
@@ -238,8 +270,9 @@ async function configureEnvImplementation(args, rl, cli) {
   const existingConfig = extractExistingConfig(envPath);
 
   // Configure each section in the template
-  const configValues = {};
+  const configValues: Record<string, string> = {};
 
+  // This is the critical part that needs to run
   for (const section of ENV_TEMPLATE.sections) {
     logger.info(`Configuring ${section.title}...`);
 
@@ -253,20 +286,20 @@ async function configureEnvImplementation(args, rl, cli) {
     Object.assign(configValues, sectionValues);
   }
 
-  // Configure services
-  let servicesToEnable = [];
-  const enabledServices = {};
+  // Configure services section...
+  let servicesToEnable: string[] = [];
+  const enabledServices: Record<string, Record<string, string>> = {};
 
   // Parse services from CLI flags
   if (cli.flags.services) {
     servicesToEnable = cli.flags.services
       .split(',')
-      .map(s => s.trim())
+      .map((s: string) => s.trim())
       .filter(Boolean);
   }
 
   // List available services if none specified
-  const availableServices = serviceRegistry.getAvailableServices();
+  const availableServices = getAvailableServices();
 
   if (servicesToEnable.length === 0) {
     logger.info('Available services:');
@@ -315,7 +348,7 @@ async function configureEnvImplementation(args, rl, cli) {
       logger.info(`Using provided configuration for ${service.name}`);
     } else {
       // Extract existing config for this service
-      const existingServiceConfig = {};
+      const existingServiceConfig: Record<string, string> = {};
 
       if (service.envVars) {
         for (const envVar of service.envVars) {
@@ -361,15 +394,20 @@ async function configureEnvImplementation(args, rl, cli) {
 /**
  * Direct API for programmatic configuration
  *
- * @param {Object} options - Configuration options
- * @param {Object} options.values - Pre-configured values for variables
- * @param {string[]} options.services - List of service IDs to enable
- * @param {Object} options.serviceConfigs - Configurations for specific services
- * @param {readline.Interface} rl - Readline interface
- * @param {boolean} force - Whether to force overwrite existing .env
- * @returns {Promise<boolean>} Success status
+ * @param options - Configuration options
+ * @param rl - Readline interface for user input
+ * @param force - Whether to force overwrite existing .env file
+ * @returns Promise resolving to boolean indicating success
  */
-async function configureEnvironment(options, rl, force = false) {
+export async function configureEnvironment(
+  options: {
+    values?: Record<string, string>,
+    services?: string[],
+    serviceConfigs?: Record<string, Record<string, string>>
+  },
+  rl: ReadlineInterface,
+  force: boolean = false
+): Promise<boolean> {
   try {
     const envPath = path.join(projectRoot, '.env');
 
@@ -392,9 +430,9 @@ async function configureEnvironment(options, rl, force = false) {
     const existingConfig = extractExistingConfig(envPath);
 
     // Prepare configuration values
-    const configValues = {
+    const configValues: Record<string, string> = {
       ...existingConfig,
-      ...options.values
+      ...(options.values || {})
     };
 
     // Validate provided values
@@ -406,8 +444,8 @@ async function configureEnvironment(options, rl, force = false) {
     }
 
     // Configure services
-    const enabledServices = {};
-    const availableServices = serviceRegistry.getAvailableServices();
+    const enabledServices: Record<string, Record<string, string>> = {};
+    const availableServices = getAvailableServices();
 
     // Process each requested service
     if (options.services && options.services.length > 0) {
@@ -424,7 +462,7 @@ async function configureEnvironment(options, rl, force = false) {
           enabledServices[serviceId] = options.serviceConfigs[serviceId];
         } else {
           // Extract existing config for this service
-          const existingServiceConfig = {};
+          const existingServiceConfig: Record<string, string> = {};
 
           if (service.envVars) {
             for (const envVar of service.envVars) {
@@ -469,14 +507,18 @@ async function configureEnvironment(options, rl, force = false) {
 
     return true;
   } catch (error) {
-    logger.error(`Failed to configure environment: ${error.message}`);
+    logger.error(`Failed to configure environment: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }
 
-// Build help options based on template and available services
-function buildHelpOptions() {
-  const options = [
+/**
+ * Build help options based on template and available services
+ *
+ * @returns Array of command options
+ */
+function buildHelpOptions(): CommandOption[] {
+  const options: CommandOption[] = [
     { name: 'force', description: 'Overwrite existing .env file without confirmation', default: 'false' },
     { name: 'services', description: 'Comma-separated list of services to enable (e.g., ollama)' }
   ];
@@ -488,14 +530,14 @@ function buildHelpOptions() {
         name: variable.name.toLowerCase(),
         description: Array.isArray(variable.description)
           ? variable.description[0]
-          : variable.description,
+          : variable.description as string,
         default: variable.default
       });
     }
   }
 
   // Add service-specific options
-  const availableServices = serviceRegistry.getAvailableServices();
+  const availableServices = getAvailableServices();
 
   for (const serviceId in availableServices) {
     const service = availableServices[serviceId];
@@ -516,8 +558,12 @@ function buildHelpOptions() {
   return options;
 }
 
-// Build examples based on template and available services
-function buildHelpExamples() {
+/**
+ * Build examples based on template and available services
+ *
+ * @returns Array of example command strings
+ */
+function buildHelpExamples(): string[] {
   const examples = [
     'manager configure-env',
     'manager configure-env --port=8080 --host=127.0.0.1',
@@ -526,7 +572,7 @@ function buildHelpExamples() {
   ];
 
   // Add service-specific examples
-  const availableServices = serviceRegistry.getAvailableServices();
+  const availableServices = getAvailableServices();
   const serviceIds = Object.keys(availableServices);
 
   if (serviceIds.length > 0) {
@@ -568,15 +614,14 @@ const configureEnvHandler = createCommandHandler(
         'and allows enabling optional services for additional functionality.',
         '',
         'Available services:',
-        ...Object.values(serviceRegistry.getAvailableServices()).map(
+        ...Object.values(getAvailableServices()).map(
           service => `- ${service.name} (${service.id}): ${service.description}`
         )
       ],
       examples: buildHelpExamples()
-    }
+    } as CommandHelp
   }
 );
 
 // Export the command handler and direct function
-module.exports = configureEnvHandler;
-module.exports.configureEnvironment = configureEnvironment;
+export default configureEnvHandler;

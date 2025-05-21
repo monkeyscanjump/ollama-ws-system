@@ -1,17 +1,18 @@
 /**
  * Cryptographic utilities for scripts
  */
-const crypto = require('crypto');
-const fs = require('fs');
-const { ensureDir } = require('./fs');
-const path = require('path');
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { ensureDir } from './fs';
 
 /**
  * Generate an RSA key pair
- * @param {number} modulusLength - Size of key in bits
- * @returns {Object} Object containing private and public keys
  */
-function generateRsaKeyPair(modulusLength = 2048) {
+export function generateRsaKeyPair(modulusLength = 2048): {
+  privateKey: string;
+  publicKey: string;
+} {
   return crypto.generateKeyPairSync('rsa', {
     modulusLength,
     publicKeyEncoding: {
@@ -27,12 +28,15 @@ function generateRsaKeyPair(modulusLength = 2048) {
 
 /**
  * Save key pair to files
- * @param {Object} keyPair - Object with privateKey and publicKey
- * @param {string} basePath - Base path for key files
- * @param {string} name - Name prefix for the key files
- * @returns {Object} Paths to the saved keys
  */
-function saveKeyPair(keyPair, basePath, name) {
+export function saveKeyPair(
+  keyPair: { privateKey: string; publicKey: string },
+  basePath: string,
+  name: string
+): {
+  privateKeyPath: string;
+  publicKeyPath: string;
+} {
   ensureDir(basePath);
 
   const privateKeyPath = path.join(basePath, `${name}_key.pem`);
@@ -49,10 +53,8 @@ function saveKeyPair(keyPair, basePath, name) {
 
 /**
  * Generate a fingerprint for a public key
- * @param {string} publicKey - PEM formatted public key
- * @returns {string} Fingerprint of the key
  */
-function generateKeyFingerprint(publicKey) {
+export function generateKeyFingerprint(publicKey: string): string {
   // Clean up the key
   const cleanKey = publicKey
     .replace(/-----BEGIN PUBLIC KEY-----/, '')
@@ -65,21 +67,12 @@ function generateKeyFingerprint(publicKey) {
     .digest('hex');
 
   // Format as fingerprint (take first 16 bytes, format as 8 groups of 4 chars)
-  return hash.substring(0, 32).match(/.{4}/g).join(':');
+  return hash.substring(0, 32).match(/.{4}/g)?.join(':') || hash.substring(0, 32);
 }
 
 /**
  * Generate a random ID
- * @param {number} bytes - Number of random bytes to generate
- * @returns {string} Hexadecimal string
  */
-function generateRandomId(bytes = 16) {
+export function generateRandomId(bytes = 16): string {
   return crypto.randomBytes(bytes).toString('hex');
 }
-
-module.exports = {
-  generateRsaKeyPair,
-  saveKeyPair,
-  generateKeyFingerprint,
-  generateRandomId
-};

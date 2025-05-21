@@ -5,22 +5,27 @@
  * 1. Directly updating the clients database file (offline mode) - DEFAULT
  * 2. Using the server API if a server is running (online mode) - Requires --online flag
  */
-const { prompt, promptForFile, confirm, createCommandHandler } = require('../utils/cli');
-const { generateKeyFingerprint } = require('../utils/crypto');
-const { files, dirs, defaults } = require('../utils/config');
-const logger = require('../utils/logger');
-const clientManager = require('../utils/client-manager');
-const revokeClientHandler = require('./revoke-client');
+import { Interface as ReadlineInterface } from 'readline';
+import { prompt, promptForFile, confirm, createCommandHandler } from '../utils/cli';
+import { generateKeyFingerprint } from '../utils/crypto';
+import { files, dirs, defaults } from '../config';
+import logger from '../utils/logger';
+import * as clientManager from '../utils/client-manager';
+import { AuthorizedClient, CommandHelp } from '../types';
 
 /**
  * Check if a client with the given name or public key already exists
  *
- * @param {string} clientsFile - Path to clients database file
- * @param {string} name - Client name to check
- * @param {string} publicKey - Public key to check
- * @returns {Object|null} Existing client if found, null otherwise
+ * @param clientsFile - Path to the clients database file
+ * @param name - Name to check for duplicates
+ * @param publicKey - Public key to check for duplicates
+ * @returns Object containing the duplicate type and client info, or null if no duplicates
  */
-function checkForExistingClient(clientsFile, name, publicKey) {
+function checkForExistingClient(
+  clientsFile: string,
+  name: string,
+  publicKey: string
+): { type: 'key' | 'name', client: AuthorizedClient } | null {
   try {
     // Get existing clients
     const clients = clientManager.listClients(clientsFile);
@@ -55,20 +60,22 @@ function checkForExistingClient(clientsFile, name, publicKey) {
 
     return null;
   } catch (error) {
-    logger.error(`Error checking for existing clients: ${error.message}`);
+    logger.error(`Error checking for existing clients: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
 
 /**
  * Revoke an existing client using the client manager directly
- * to avoid any command handler issues with args parameters
  *
- * @param {Object} existingClient - The client to revoke
- * @param {string} clientsFile - Path to clients database file
- * @returns {Promise<boolean>} True if client was revoked successfully
+ * @param existingClient - Client to revoke
+ * @param clientsFile - Path to the clients database file
+ * @returns Promise resolving to boolean indicating success
  */
-async function revokeExistingClient(existingClient, clientsFile) {
+async function revokeExistingClient(
+  existingClient: AuthorizedClient,
+  clientsFile: string
+): Promise<boolean> {
   try {
     logger.info(`Revoking existing client "${existingClient.name}" (ID: ${existingClient.id})...`);
 
@@ -87,7 +94,7 @@ async function revokeExistingClient(existingClient, clientsFile) {
       return false;
     }
   } catch (error) {
-    logger.error(`Error during revocation: ${error.message}`);
+    logger.error(`Error during revocation: ${error instanceof Error ? error.message : String(error)}`);
     return false;
   }
 }
@@ -95,19 +102,22 @@ async function revokeExistingClient(existingClient, clientsFile) {
 /**
  * Main registration implementation
  *
- * @param {Object} cli - Parsed command line arguments
- * @param {readline.Interface} rl - Readline interface
- * @returns {Promise<void>}
+ * @param cli - Object containing command line flags and arguments
+ * @param rl - Readline interface for user input
+ * @returns Promise that resolves when registration is complete
  */
-async function registerImplementation(cli, rl) {
+async function registerImplementation(
+  cli: { flags: Record<string, any>, _: string[] },
+  rl: ReadlineInterface
+): Promise<void> {
   // Get parameters from the double-dash flags
-  const serverUrl = cli.flags['server-url'];
-  const clientName = cli.flags['name'];
-  const publicKeyPath = cli.flags['key-path'];
-  const signatureAlgorithm = cli.flags['algorithm'];
+  const serverUrl = cli.flags['server-url'] as string;
+  const clientName = cli.flags['name'] as string;
+  const publicKeyPath = cli.flags['key-path'] as string;
+  const signatureAlgorithm = cli.flags['algorithm'] as string;
   // Reversed logic: Default is offline, only use online mode if specifically requested
   const isOnline = cli.flags['online'] === true || cli.flags['online'] === 'true';
-  const clientsFile = cli.flags['clients-file'];
+  const clientsFile = cli.flags['clients-file'] as string;
   // Flag to skip confirmation prompts (useful for non-interactive scripts)
   const forceRegister = cli.flags['force'] === true || cli.flags['force'] === 'true';
 
@@ -130,20 +140,24 @@ async function registerImplementation(cli, rl) {
 
   // Get public key
   logger.info('Reading public key...');
-  let publicKey;
+  let publicKey: string;
 
   if (publicKeyPath) {
     // If path is provided, try to read it
     logger.info(`Attempting to read key from: ${publicKeyPath}`);
-    publicKey = clientManager.readPublicKey(publicKeyPath);
-    if (!publicKey) {
+    const readKey = clientManager.readPublicKey(publicKeyPath);
+    if (!readKey) {
       logger.warn(`Could not read public key from ${publicKeyPath}`);
+      throw new Error(`Failed to read public key from ${publicKeyPath}`);
     }
-  }
-
-  // If we don't have a valid key yet, prompt for one
-  if (!publicKey) {
-    publicKey = await promptForFile(rl, 'Enter path to public key file: ', clientManager.readPublicKey);
+    publicKey = readKey;
+  } else {
+    // If we don't have a key path, prompt for one
+    const keyInput = await promptForFile(rl, 'Enter path to public key file: ', clientManager.readPublicKey);
+    if (!keyInput) {
+      throw new Error('Valid public key file is required');
+    }
+    publicKey = keyInput;
   }
 
   // Display key fingerprint for verification
@@ -284,7 +298,9 @@ async function registerImplementation(cli, rl) {
   }
 }
 
-// Create the command handler with detailed help information
+/**
+ * Create the command handler with detailed help information
+ */
 const registerClientHandler = createCommandHandler(
   registerImplementation,
   {
@@ -319,12 +335,10 @@ const registerClientHandler = createCommandHandler(
         'manager register-client --online --server-url=http://example.com:3000 --name=remote-client --key-path=./keys/remote_key.pub',
         'manager register-client --name=admin --key-path=./keys/new_admin_key.pub --force'
       ]
-    }
+    } as CommandHelp
   }
 );
 
-// Export the command handler and helper functions
-module.exports = registerClientHandler;
-module.exports.registerImplementation = registerImplementation;
-module.exports.checkForExistingClient = checkForExistingClient;
-module.exports.revokeExistingClient = revokeExistingClient;
+// Export the handler and helper functions
+export default registerClientHandler;
+export { checkForExistingClient, revokeExistingClient, registerImplementation };

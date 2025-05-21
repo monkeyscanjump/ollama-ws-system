@@ -33,7 +33,7 @@ export function storeChallenge(connectionId: string, challenge: string): void {
   const timeoutId = setTimeout(() => {
     if (activeChallenge.has(connectionId)) {
       activeChallenge.delete(connectionId);
-      logger.debug(`Challenge for connection ${connectionId} expired and removed`);
+      logger.info(`Challenge for connection ${connectionId} expired and removed`);
     }
   }, SECURITY.CHALLENGE_EXPIRY_MS);
 
@@ -44,7 +44,7 @@ export function storeChallenge(connectionId: string, challenge: string): void {
 
   activeChallenge.set(connectionId, { challenge, expiresAt, timeoutId });
 
-  logger.debug(`Stored challenge for connection ${connectionId}`);
+  logger.info(`Stored challenge for connection ${connectionId}`);
 }
 
 /**
@@ -70,7 +70,7 @@ export function verifyChallenge(connectionId: string, challenge: string): boolea
   if (isValid) {
     // Consume the challenge to prevent replay attacks
     clearChallenge(connectionId);
-    logger.debug(`Challenge for connection ${connectionId} verified successfully and consumed`);
+    logger.info(`Challenge for connection ${connectionId} verified successfully and consumed`);
   } else {
     logger.warn(`Invalid challenge for connection ${connectionId}`);
   }
@@ -89,6 +89,6 @@ export function clearChallenge(connectionId: string): void {
     // Clear the timeout to prevent the callback from executing
     clearTimeout(storedData.timeoutId);
     activeChallenge.delete(connectionId);
-    logger.debug(`Cleared challenge for connection ${connectionId}`);
+    logger.info(`Cleared challenge for connection ${connectionId}`);
   }
 }

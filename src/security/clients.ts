@@ -203,7 +203,7 @@ export function saveClientConnectionState(
   // Save updated client database
   saveAuthorizedClients(clients);
 
-  logger.debug(`Updated connection state for client: ${clientId}`);
+  logger.info(`Updated connection state for client: ${clientId}`);
   return true;
 }
 
@@ -213,5 +213,5 @@ export function saveClientConnectionState(
  */
 export function clearClientCache(): void {
   clientCache = [];
-  logger.debug('Client cache cleared');
+  logger.info('Client cache cleared');
 }

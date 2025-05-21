@@ -4,26 +4,30 @@
  * Initializes the WebSocket server environment by creating required
  * directories, generating admin client credentials, and creating configuration files.
  */
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const { ensureDir } = require('../utils/fs');
-const { confirm, createCommandHandler } = require('../utils/cli');
-const { generateRsaKeyPair } = require('../utils/crypto');
-const { dirs, files, defaults, projectRoot } = require('../utils/config');
-const logger = require('../utils/logger');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import { Interface as ReadlineInterface } from 'readline';
+import { ensureDir } from '../utils/fs';
+import { confirm, createCommandHandler } from '../utils/cli';
+import { generateRsaKeyPair } from '../utils/crypto';
+import { dirs, files, defaults, projectRoot } from '../config';
+import logger from '../utils/logger';
 
 // Import the command modules
-const registerClient = require('./register-client');
-const generateKeys = require('./generate-keys');
-const configureEnv = require('./configure-env');
+import {
+  checkForExistingClient,
+  revokeExistingClient,
+  registerImplementation
+} from './register-client';
+import * as generateKeysModule from './generate-keys';
+import * as configureEnvModule from './configure-env';
+import { CommandHelp } from '../types';
 
 /**
  * Create required directories for the server
- *
- * @returns {void}
  */
-function setupDirectories() {
+function setupDirectories(): void {
   logger.info('Creating required directories...');
 
   const directories = [
@@ -46,9 +50,9 @@ function setupDirectories() {
 /**
  * Check if TypeScript code is compiled and compile it if needed
  *
- * @returns {boolean} Whether compilation succeeded or was already done
+ * @returns Boolean indicating if code is compiled or compilation succeeded
  */
-function checkCompiledCode() {
+function checkCompiledCode(): boolean {
   const distDir = path.join(projectRoot, 'dist');
   const indexFile = path.join(distDir, 'index.js');
 
@@ -73,12 +77,16 @@ function checkCompiledCode() {
 /**
  * Setup admin client by generating keys and registering
  *
- * @param {string} adminName - Name for the admin client
- * @param {number} keySize - Size of RSA key to generate
- * @param {readline.Interface} rl - Readline interface
- * @returns {Promise<void>}
+ * @param adminName - Name for the admin client
+ * @param keySize - Size of RSA key in bits
+ * @param rl - Readline interface for user input
+ * @returns Promise that resolves when setup is complete
  */
-async function setupAdminClient(adminName, keySize, rl) {
+async function setupAdminClient(
+  adminName: string,
+  keySize: number,
+  rl: ReadlineInterface
+): Promise<void> {
   // Make sure the directories exist
   ensureDir(dirs.keys);
   ensureDir(dirs.data);
@@ -90,7 +98,7 @@ async function setupAdminClient(adminName, keySize, rl) {
     if (fs.existsSync(files.clients)) {
       // Create a dummy key for checking existing clients by name
       const dummyKeyPair = generateRsaKeyPair(2048);
-      existingAdmin = registerClient.checkForExistingClient(
+      existingAdmin = checkForExistingClient(
         files.clients,
         adminName,
         dummyKeyPair.publicKey
@@ -115,12 +123,11 @@ async function setupAdminClient(adminName, keySize, rl) {
       logger.info('Regenerating admin keys...');
 
       // Revoke existing client directly
-      await registerClient.revokeExistingClient(existingAdmin.client, files.clients);
+      await revokeExistingClient(existingAdmin.client, files.clients);
     }
 
     // Generate keys using the exported generateClientKeys function
-    // This bypasses any potential CLI object issues
-    const keyResult = generateKeys.generateClientKeys(
+    const keyResult = generateKeysModule.generateClientKeys(
       adminName,  // Explicitly use adminName
       dirs.keys,
       keySize,
@@ -144,43 +151,50 @@ async function setupAdminClient(adminName, keySize, rl) {
         'clients-file': files.clients,
         'server-url': defaults.serverUrl,
         'force': true // Skip additional confirmation prompts
-      }
+      },
+      _: [] // Add empty positional arguments array
     };
 
     try {
-      await registerClient.registerImplementation(registerCli, rl);
+      await registerImplementation(registerCli, rl);
       logger.success('Admin client setup complete');
     } catch (error) {
-      if (error.message === 'Registration cancelled by user') {
+      if (error instanceof Error && error.message === 'Registration cancelled by user') {
         logger.info('Admin setup cancelled. Using existing admin client.');
       } else {
-        logger.error(`Failed to register admin client: ${error.message}`);
+        logger.error(`Failed to register admin client: ${error instanceof Error ? error.message : String(error)}`);
         throw new Error('Admin registration failed');
       }
     }
   } catch (error) {
-    logger.error(`Admin setup failed: ${error.message}`);
+    logger.error(`Admin setup failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 /**
  * Main setup implementation
  *
- * @param {Object} cli - Parsed command line arguments
- * @param {readline.Interface} rl - Readline interface
- * @returns {Promise<void>}
+ * @param cli - Object containing command line flags and arguments
+ * @param rl - Readline interface for user input
+ * @returns Promise that resolves when setup is complete
  */
-async function setupImplementation(cli, rl) {
+async function setupImplementation(
+  cli: { flags: Record<string, any>, _: string[] },
+  rl: ReadlineInterface
+): Promise<void> {
   logger.section('WebSocket Server Setup');
 
   // Get configuration from arguments
-  const adminName = cli.flags['admin-name'];
-  const keySize = parseInt(cli.flags['key-size'], 10);
+  const adminName = cli.flags['admin-name'] as string;
+  const keySize = parseInt(cli.flags['key-size'] as string, 10);
 
   // Get services to enable using the new approach only
-  let servicesToEnable = [];
+  let servicesToEnable: string[] = [];
   if (cli.flags['services']) {
-    servicesToEnable = cli.flags['services'].split(',').map(s => s.trim()).filter(Boolean);
+    servicesToEnable = (cli.flags['services'] as string)
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
   }
 
   // Setup directories
@@ -198,21 +212,16 @@ async function setupImplementation(cli, rl) {
   // Setup environment file
   try {
     // Use the programmatic API of configure-env
-    await configureEnv.configureEnvironment({
-      // Default server config
-      serverConfig: {
-        // Server settings will use defaults or prompt
-      },
+    await configureEnvModule.configureEnvironment({
+      // Default server configuration values
+      values: {},
       // List of services to enable
       services: servicesToEnable,
       // Service-specific configurations (optional)
-      serviceConfigs: {
-        // You can provide pre-configured settings if needed
-        // e.g. ollama: { OLLAMA_API_URL: 'http://localhost:11434', OLLAMA_DEFAULT_MODEL: 'llama2' }
-      }
+      serviceConfigs: {}
     }, rl, !fs.existsSync(path.join(projectRoot, '.env')));
   } catch (error) {
-    logger.error(`Environment configuration failed: ${error.message}`);
+    logger.error(`Environment configuration failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   logger.section('Setup Complete');
@@ -226,7 +235,9 @@ async function setupImplementation(cli, rl) {
   logger.log('  npm run docker:start');
 }
 
-// Create the command handler with all setup information
+/**
+ * Create the command handler with all setup information
+ */
 const setupHandler = createCommandHandler(
   setupImplementation,
   {
@@ -239,7 +250,7 @@ const setupHandler = createCommandHandler(
       command: 'setup',
       options: [
         { name: 'admin-name', description: 'Name for the admin client', default: 'admin' },
-        { name: 'key-size', description: 'Size of RSA key in bits', default: defaults.keySize },
+        { name: 'key-size', description: 'Size of RSA key in bits', default: String(defaults.keySize) },
         { name: 'services', description: 'Comma-separated list of services to enable (e.g., ollama)' },
         { name: 'help', description: 'Show this help message' }
       ],
@@ -255,9 +266,9 @@ const setupHandler = createCommandHandler(
         'manager setup --admin-name=superuser --key-size=4096',
         'manager setup --services=ollama'
       ]
-    }
+    } as CommandHelp
   }
 );
 
 // Export the setup function
-module.exports = setupHandler;
+export default setupHandler;

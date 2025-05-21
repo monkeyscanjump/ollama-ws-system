@@ -5,32 +5,54 @@
  * in the WebSocket system, including input/output, argument parsing,
  * help text formatting, and interactive prompts.
  */
-const readline = require('readline');
-const path = require('path');
-const os = require('os');
-const logger = require('./logger');
+import { Interface as ReadlineInterface, createInterface as createNodeInterface } from 'readline';
+import path from 'path';
+import os from 'os';
+import logger from './logger';
+import { CommandHelp } from '../types';
+
+let globalRl: ReadlineInterface | null = null;
 
 /**
  * Create readline interface for CLI input
- * @returns {readline.Interface} Readline interface
+ * This ensures only one readline interface exists at a time
+ *
+ * @returns Readline interface for user input/output
  */
-function createInterface() {
-  return readline.createInterface({
+export function createInterface(): ReadlineInterface {
+  // If we already have an interface, return it
+  if (globalRl) {
+    return globalRl;
+  }
+
+  globalRl = createNodeInterface({
     input: process.stdin,
     output: process.stdout
   });
+
+  // When closing, release the global reference
+  globalRl.on('close', () => {
+    globalRl = null;
+  });
+
+  return globalRl;
 }
 
 /**
  * Parse command line arguments with support for flags and options
- * @param {string[]} args - Raw command line arguments
- * @param {Object} options - Option configurations
- * @returns {Object} Parsed arguments and options
+ *
+ * @param args - Command line arguments to parse
+ * @param options - Configuration options for parsing
+ * @returns Parsed arguments object with positional args, flags, and help status
  */
-function parseArgs(args, options = {}) {
+export function parseArgs(args: string[], options: { defaults?: Record<string, any> } = {}): {
+  _: string[];
+  flags: Record<string, any>;
+  help: boolean;
+} {
   const result = {
-    _: [],     // Positional arguments
-    flags: {}, // Flag options (--flag)
+    _: [] as string[],     // Positional arguments
+    flags: {} as Record<string, any>, // Flag options (--flag)
     help: args.includes('--help') || args.includes('-h')
   };
 
@@ -75,10 +97,11 @@ function parseArgs(args, options = {}) {
 
 /**
  * Validate that all provided arguments use double-dash format
- * @param {string[]} args - Command line arguments to validate
- * @returns {boolean} Whether all arguments use proper format
+ *
+ * @param args - Command line arguments to validate
+ * @returns Boolean indicating if all arguments use correct syntax
  */
-function validateArgumentSyntax(args) {
+export function validateArgumentSyntax(args: string[]): boolean {
   // Skip validation if no arguments
   if (!args || args.length === 0) {
     return true;
@@ -99,12 +122,17 @@ function validateArgumentSyntax(args) {
 
 /**
  * Ask for confirmation from the user
- * @param {readline.Interface} rl - Readline interface
- * @param {string} question - Question to ask
- * @param {boolean} defaultYes - Whether the default (empty) response is yes
- * @returns {Promise<boolean>} User's response
+ *
+ * @param rl - Readline interface
+ * @param question - Question to ask user
+ * @param defaultYes - Whether the default answer is Yes
+ * @returns Promise resolving to boolean based on user response
  */
-function confirm(rl, question, defaultYes = false) {
+export function confirm(
+  rl: ReadlineInterface,
+  question: string,
+  defaultYes = false
+): Promise<boolean> {
   const prompt = defaultYes ? `${question} [Y/n] ` : `${question} [y/N] `;
 
   return new Promise((resolve) => {
@@ -125,27 +153,39 @@ function confirm(rl, question, defaultYes = false) {
 }
 
 /**
- * Simple prompt for input
- * @param {readline.Interface} rl - Readline interface
- * @param {string} question - Question to ask
- * @returns {Promise<string>} User's response
+ * Simple prompt for input with default value support
+ *
+ * @param rl - Readline interface
+ * @param question - Question to ask user
+ * @param defaultValue - Optional default value if user input is empty
+ * @returns Promise resolving to user input string
  */
-function prompt(rl, question) {
+export function prompt(
+  rl: ReadlineInterface,
+  question: string,
+  defaultValue?: string
+): Promise<string> {
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
-      resolve(answer.trim());
+      const trimmedAnswer = answer.trim();
+      resolve(trimmedAnswer === '' && defaultValue !== undefined ? defaultValue : trimmedAnswer);
     });
   });
 }
 
 /**
  * Prompt for a file path and read its contents
- * @param {readline.Interface} rl - Readline interface
- * @param {string} question - Question to ask
- * @param {Function} readFunction - Function to read the file
- * @returns {Promise<string>} File contents
+ *
+ * @param rl - Readline interface
+ * @param question - Question to ask user
+ * @param readFunction - Function to read and process the file
+ * @returns Promise resolving to the file contents processed by readFunction
  */
-function promptForFile(rl, question, readFunction) {
+export function promptForFile<T>(
+  rl: ReadlineInterface,
+  question: string,
+  readFunction: (path: string) => Promise<T> | T
+): Promise<T> {
   return new Promise((resolve) => {
     rl.question(question, async (answer) => {
       try {
@@ -158,7 +198,7 @@ function promptForFile(rl, question, readFunction) {
           resolve(promptForFile(rl, question, readFunction));
         }
       } catch (error) {
-        logger.error(`Error reading file: ${error.message}`);
+        logger.error(`Error reading file: ${error instanceof Error ? error.message : String(error)}`);
         resolve(promptForFile(rl, question, readFunction));
       }
     });
@@ -168,26 +208,23 @@ function promptForFile(rl, question, readFunction) {
 /**
  * Display command help text with consistent formatting
  *
- * @param {Object} options - Help text configuration
- * @param {string} options.title - Title of the command
- * @param {string} options.command - Command name
- * @param {Array<{name: string, description: string, default?: string}>} options.options - Command options
- * @param {string} options.description - Command description
- * @param {string[]} options.examples - Command examples
+ * @param options - Help text configuration
  */
-function displayHelp({ title, command, options, description, examples }) {
+export function displayHelp(options: CommandHelp): void {
+  const { title, command, options: cmdOptions, description, examples } = options;
+
   logger.section(title);
   logger.log(`Usage: manager ${command} [--options]`);
   logger.log('');
 
-  if (options && options.length > 0) {
+  if (cmdOptions && cmdOptions.length > 0) {
     logger.log('Options:');
 
     // Find the longest option name for alignment
-    const maxOptionLength = Math.max(...options.map(opt => opt.name.length));
+    const maxOptionLength = Math.max(...cmdOptions.map(opt => opt.name.length));
 
     // Display each option with alignment
-    options.forEach(opt => {
+    cmdOptions.forEach(opt => {
       const padding = ' '.repeat(Math.max(0, maxOptionLength - opt.name.length + 2));
       let line = `  --${opt.name}${padding}${opt.description}`;
 
@@ -243,11 +280,14 @@ function displayHelp({ title, command, options, description, examples }) {
 /**
  * Format data in a table
  *
- * @param {Array<Array<string>>} rows - Table data as array of rows
- * @param {Object} options - Table formatting options
- * @returns {string} Formatted table
+ * @param rows - Array of string arrays representing table rows
+ * @param options - Table formatting options
+ * @returns Formatted table string
  */
-function formatTable(rows, options = {}) {
+export function formatTable(
+  rows: string[][],
+  options: { hasHeaders?: boolean; columnPadding?: number } = {}
+): string {
   if (!rows || rows.length === 0) {
     return '';
   }
@@ -256,7 +296,7 @@ function formatTable(rows, options = {}) {
   const columnPadding = options.columnPadding || 2;
 
   // Calculate column widths
-  const columnWidths = [];
+  const columnWidths: number[] = [];
 
   rows.forEach(row => {
     row.forEach((cell, i) => {
@@ -298,12 +338,18 @@ function formatTable(rows, options = {}) {
 /**
  * Creates a standardized command handler function
  *
- * @param {Function} handler - The command implementation function
- * @param {Object} options - Handler options
- * @returns {Function} Wrapped handler function
+ * @param handler - Function to handle command execution
+ * @param options - Configuration options for the command
+ * @returns Command handler function
  */
-function createCommandHandler(handler, options = {}) {
-  return async function(args) {
+export function createCommandHandler<T>(
+  handler: (cli: { flags: Record<string, any>, _: string[] }, rl: ReadlineInterface) => Promise<T>,
+  options: {
+    defaults?: Record<string, any>;
+    help?: CommandHelp;
+  } = {}
+): (args: string[]) => Promise<void> {
+  return async function(args: string[]): Promise<void> {
     // Create readline interface
     const rl = createInterface();
 
@@ -322,22 +368,10 @@ function createCommandHandler(handler, options = {}) {
       // Execute handler with parsed arguments
       await handler(cli, rl);
     } catch (error) {
-      logger.error(`Command failed: ${error.message}`);
+      logger.error(`Command failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error; // Propagate to manager
     } finally {
       rl.close();
     }
   };
 }
-
-module.exports = {
-  createInterface,
-  parseArgs,
-  validateArgumentSyntax,
-  confirm,
-  prompt,
-  promptForFile,
-  displayHelp,
-  formatTable,
-  createCommandHandler
-};

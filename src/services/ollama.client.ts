@@ -22,7 +22,7 @@ export function createOllamaClient(baseUrl: string) {
    * @returns Promise resolving to array of available models
    */
   async function listModels(): Promise<OllamaModel[]> {
-    logger.debug('Listing models');
+    logger.info('Listing models');
 
     const response = await fetch(`${apiUrl}/api/tags`, {
       method: 'GET',
@@ -51,7 +51,7 @@ export function createOllamaClient(baseUrl: string) {
     const { model, prompt, options = {}, onToken, requestId, abortSignal } = params;
     const id = requestId || Math.random().toString(36).substring(2, 15);
 
-    logger.debug({ model, requestId: id }, 'Generating text');
+    logger.info({ model, requestId: id }, 'Generating text');
 
     const controller = new AbortController();
 
@@ -110,7 +110,7 @@ export function createOllamaClient(baseUrl: string) {
                   }
 
                   if (data.done) {
-                    logger.debug({ requestId: id }, 'Generation complete');
+                    logger.info({ requestId: id }, 'Generation complete');
                   }
                 } catch (e) {
                   logger.error({ requestId: id }, `Error parsing JSON: ${e}`);
@@ -139,7 +139,7 @@ export function createOllamaClient(baseUrl: string) {
           }
 
           activeRequests.delete(id);
-          logger.debug({ model, requestId: id, chars: fullResponse.length }, 'Generation finished');
+          logger.info({ model, requestId: id, chars: fullResponse.length }, 'Generation finished');
           resolve(fullResponse);
         });
 

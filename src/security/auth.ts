@@ -31,13 +31,13 @@ export function verifyClientSignature(
     // Use client-specific algorithm if available, otherwise use default
     const algorithm = client.signatureAlgorithm || defaultAlgorithm;
 
-    logger.debug(`Using signature algorithm ${algorithm} for client ${clientId}`);
+    logger.info(`Using signature algorithm ${algorithm} for client ${clientId}`);
 
     const verify = crypto.createVerify(algorithm);
     verify.update(challenge);
     const isValid = verify.verify(client.publicKey, Buffer.from(signature, 'base64'));
 
-    logger.debug(`Signature verification for client ${clientId}: ${isValid ? 'success' : 'failed'}`);
+    logger.info(`Signature verification for client ${clientId}: ${isValid ? 'success' : 'failed'}`);
     return isValid;
   } catch (error) {
     logger.error(`Signature verification error for client ${clientId}: ${error}`);
