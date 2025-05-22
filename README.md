@@ -1,64 +1,69 @@
-# Ollama WebSocket System
+# WebSocket System
 
-A secure gateway for Ollama language models that adds authentication, access control, and real-time streaming capabilities.
+A secure WebSocket gateway with robust authentication and access control. Currently supports Ollama language models with plans for additional services.
 
 ![System Architecture](docs/architecture.svg)
 
 ## Table of Contents
 
-- [Ollama WebSocket System](#ollama-websocket-system)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Features](#features)
-  - [Documentation](#documentation)
-  - [Quick Start](#quick-start)
-    - [Prerequisites](#prerequisites)
-    - [Standard Installation](#standard-installation)
-    - [Docker Installation](#docker-installation)
-  - [Configuration Overview](#configuration-overview)
-  - [Basic Usage](#basic-usage)
-    - [Setting Up a Client](#setting-up-a-client)
-    - [Using the Web Interface](#using-the-web-interface)
-    - [Client Libraries](#client-libraries)
-  - [Development](#development)
-  - [License](#license)
+- WebSocket System
+  - Table of Contents
+  - Overview
+  - Features
+  - Documentation
+  - Quick Start
+    - Prerequisites
+    - Standard Installation
+    - Docker Installation
+    - Cloudflare Tunnel Setup
+  - Configuration
+  - Command-Line Interface
+  - Client Management
+    - Setting Up a Client
+    - Using the Web Interface
+    - Client Libraries
+  - Development
+  - License
 
 ## Overview
 
-Ollama WebSocket System serves as a secure intermediary between clients and an Ollama language model server. It solves several critical problems:
+WebSocket System provides a secure, authenticated gateway for various backend services. The system is designed to be extensible, with Ollama language models being the first supported service. It solves several critical problems:
 
-1. **Security**: Ollama itself has no built-in authentication, making it vulnerable when exposed publicly
-2. **Access Control**: The system lets you manage which clients can access your models
-3. **Real-time Delivery**: Streams generated text to clients as it's created, token by token
-4. **Cross-platform Support**: Enables any WebSocket-capable platform to interact with Ollama
+1. **Security**: Adds public-key authentication to services that don't have built-in security
+2. **Access Control**: Lets you manage which clients can access your backend services
+3. **Real-time Delivery**: Streams data to clients as it's generated
+4. **Cross-platform Support**: Enables any WebSocket-capable platform to interact with your services
+5. **Secure External Access**: Optional Cloudflare Tunnel integration for secure remote access
 
-For a detailed introduction, see our [Getting Started Guide](docs/getting-started.md).
+For a detailed introduction, see our Getting Started Guide.
 
 ## Features
 
 - **Public-Key Authentication**: Client authentication using the same proven approach as SSH
-- **Real-time Text Streaming**: Delivers model outputs as they're generated
+- **Real-time Data Streaming**: Delivers outputs as they're generated
 - **Client Management Tools**: Easy-to-use utilities for adding, listing, and revoking clients
 - **Rate Limiting**: Built-in protection against brute force attacks
-- **Multiple Model Support**: Connect to any model available on your Ollama server
-- **Docker Integration**: Run standalone or with Docker/Docker Compose
+- **Service Extensibility**: Designed to support multiple backend services (currently Ollama)
+- **Docker Integration**: Complete containerized solution with no external dependencies
 - **Cross-Platform Compatibility**: Connect from browsers, Node.js, Python, or any WebSocket-capable client
+- **Cloudflare Tunnel**: Secure external access without exposing ports or managing SSL certificates
 
-Our [Security Model](docs/security-model.md) documentation explains the authentication system in detail.
+Our Security Model documentation explains the authentication system in detail.
 
 ## Documentation
 
 We provide comprehensive documentation to help you get started, implement clients, and understand the system:
 
-- [Getting Started Guide](docs/getting-started.md) - First steps for new users
-- [API Reference](docs/api-reference.md) - Complete WebSocket and REST API details
-- [Security Model](docs/security-model.md) - In-depth explanation of the authentication system
+- Getting Started Guide - First steps for new users
+- API Reference - Complete WebSocket and REST API details
+- Security Model - In-depth explanation of the authentication system
 - **Client Implementations**:
-  - [Node.js Client](docs/nodejs-client.md) - How to build Node.js clients
-  - [Python Client](docs/python-client.md) - How to build Python clients
-  - [Browser Client](docs/browser-client.md) - How to build web clients
-- [Docker Configuration](docs/docker-configuration.md) - Docker setup and customization
-- [Troubleshooting Guide](docs/troubleshooting.md) - Solutions for common issues
+  - Node.js Client - How to build Node.js clients
+  - Python Client - How to build Python clients
+  - Browser Client - How to build web clients
+- Docker Configuration - Docker setup and customization
+- Cloudflare Tunnel Setup - Secure external access setup
+- Troubleshooting Guide - Solutions for common issues
 
 ## Quick Start
 
@@ -66,7 +71,7 @@ We provide comprehensive documentation to help you get started, implement client
 
 - Node.js 16.0.0 or higher
 - npm 7.0.0 or higher
-- Ollama installed and running (locally or remotely)
+- Docker (for containerized deployment, recommended)
 
 ### Standard Installation
 
@@ -82,7 +87,7 @@ npm install
 npm run build
 
 # Run the setup script to create directories and an admin client
-npm run setup
+npx manager setup
 
 # Start the server
 npm start
@@ -95,52 +100,106 @@ npm start
 git clone https://github.com/monkeyscanjump/ws-system.git
 cd ws-system
 
-# Build the Docker image
-npm run docker:build
+# Run the setup command (creates necessary directories and configurations)
+npx manager setup --use-docker=true
 
-# Start the stack with Docker Compose
-npm run docker:start
+# Start the system with Docker Compose
+npx manager start-system
+
+# Check system status
+npx manager system-status
 
 # View logs
-npm run docker:logs
+npx manager system-logs
 ```
 
-The Docker setup includes the WebSocket server, an Ollama container, and persistent volumes. See our Docker Configuration Guide for detailed options.
+When using Docker, you don't need to install Ollama separately as it's included in the Docker Compose setup.
 
-## Configuration Overview
+### Cloudflare Tunnel Setup
 
-Configuration is handled via environment variables or a .env file. Key settings include:
+For secure external access without port forwarding or SSL certificates:
+
+```bash
+# Set up Cloudflare Tunnel (requires a Cloudflare account)
+npx manager setup-cloudflared --hostname=your-subdomain.your-domain.com
+
+# Start the system with Cloudflare Tunnel
+npx manager start-system
+```
+
+## Configuration
+
+Configuration is handled via environment variables or a .env file. The system offers an interactive configuration tool:
+
+```bash
+# Interactive configuration
+npx manager configure-env
+
+# Configure with specific options
+npx manager configure-env --port=8080 --log-level=debug
+```
+
+Key settings include:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PORT` | WebSocket server port | `3000` |
-| `OLLAMA_API_URL` | URL to the Ollama API | `http://localhost:11434` |
+| `OLLAMA_API_URL` | URL to the Ollama API | `http://ollama:11434` in Docker |
 | `OLLAMA_DEFAULT_MODEL` | Default model if not specified | `llama2` |
+| `CLOUDFLARE_HOSTNAME` | Hostname for Cloudflare Tunnel | `subdomain.example.com` |
 
-For a complete list of configuration options, see our Getting Started Guide.
+Run `npx manager scan-env` to identify any missing environment variables in your configuration.
 
-## Basic Usage
+## Command-Line Interface
+
+The system includes a comprehensive CLI manager for all administrative tasks:
+
+```bash
+# Get overall help
+npx manager --help
+
+# Get help for a specific command
+npx manager setup-cloudflared --help
+```
+
+Available commands:
+
+| Command | Description |
+|---------|-------------|
+| `setup` | Initialize the server environment |
+| `generate-keys` | Generate client key pair |
+| `register-client` | Register a new client |
+| `list-clients` | List all registered clients |
+| `revoke-client` | Revoke client access |
+| `backup-clients` | Backup client database |
+| `configure-env` | Configure environment settings |
+| `setup-cloudflared` | Set up Cloudflare Tunnel |
+| `start-system` | Start Docker containers |
+| `stop-system` | Stop Docker containers |
+| `system-status` | Show container status |
+| `system-logs` | View container logs |
+| `build-image` | Build Docker image |
+
+## Client Management
 
 ### Setting Up a Client
 
 ```bash
 # Generate a key pair
-npm run generate-keys -- my-client
+npx manager generate-keys --name=my-client
 
 # Register with the server
-npm run register-client -- http://localhost:3000 my-client ./keys/my-client_key.pub
+npx manager register-client --name=my-client --key-path=./keys/my-client_key.pub
 ```
-
-For full client management details, see our Getting Started Guide.
 
 ### Using the Web Interface
 
 The simplest way to test your connection:
 
-1. Open your browser to `http://localhost:3000`
+1. Open your browser to `http://localhost:3000` (or your Cloudflare Tunnel URL)
 2. Enter your Client ID and private key
 3. Click "Connect"
-4. Once connected, send prompts to your models
+4. Once connected, send requests to your backend services
 
 ### Client Libraries
 
@@ -160,6 +219,9 @@ npm install
 
 # Start in development mode (with auto-reload)
 npm run dev
+
+# Run the CLI in development mode
+npm run dev:manager -- command [options]
 ```
 
 For running tests:

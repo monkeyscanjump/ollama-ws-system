@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="900" height="600" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+<svg width="900" height="720" viewBox="0 0 900 720" xmlns="http://www.w3.org/2000/svg">
   <!-- Definitions for markers and gradients -->
   <defs>
     <!-- Arrow markers with different colors -->
@@ -15,6 +15,14 @@
       markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#cc6600"/>
     </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6600cc"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#cc0000"/>
+    </marker>
 
     <!-- Gradients for component backgrounds -->
     <linearGradient id="client-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -29,120 +37,140 @@
       <stop offset="0%" stop-color="#fff2e6" />
       <stop offset="100%" stop-color="#ffe6cc" />
     </linearGradient>
+    <linearGradient id="cloudflare-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f2e6ff" />
+      <stop offset="100%" stop-color="#e6ccff" />
+    </linearGradient>
+    <linearGradient id="docker-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f2f2f2" />
+      <stop offset="100%" stop-color="#e6e6e6" />
+    </linearGradient>
+    <linearGradient id="future-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffe6e6" />
+      <stop offset="100%" stop-color="#ffcccc" />
+    </linearGradient>
   </defs>
 
   <!-- Background -->
-  <rect x="0" y="0" width="900" height="600" fill="#f9f9f9" rx="10" ry="10"/>
+  <rect x="0" y="0" width="900" height="720" fill="#f9f9f9" rx="10" ry="10"/>
 
   <!-- Title -->
-  <text x="450" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle">Ollama WebSocket System Architecture</text>
+  <text x="450" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle">WebSocket System Architecture</text>
 
-  <!-- ===== COMPONENT BOXES ===== -->
+  <!-- ===== DOCKER HOST ENVIRONMENT ===== -->
+  <rect x="30" y="80" width="840" height="550" rx="15" ry="15" fill="url(#docker-gradient)" stroke="#666666" stroke-width="2" stroke-dasharray="10,5"/>
+  <text x="450" y="105" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Docker Host Environment</text>
 
-  <!-- Client Section -->
-  <rect x="50" y="100" width="200" height="380" rx="10" ry="10"
-        fill="url(#client-gradient)" stroke="#0066cc" stroke-width="2"/>
-  <text x="150" y="130" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">Clients</text>
+  <!-- Docker logo -->
+  <image x="45" y="85" width="30" height="30" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0iIzI0OTZlZCI+PHBhdGggZD0iTTMwLjIgMjEuNWgtNi41di02LjVoNi41djYuNXptLTYuNSAwaDYuNXY2LjVoLTYuNXYtNi41em02LjUgMGg2LjV2Ni41aC02LjV2LTYuNXptLTEzLjEgMGg2LjV2Ni41aC02LjV2LTYuNXptNi42LTYuNWg2LjV2Ni41aC02LjV2LTYuNXptMTMgMGg2LjV2Ni41aC02LjV2LTYuNXptLTE5LjUgMGg2LjV2Ni41aC02LjV2LTYuNXptMTMgMTIuOWg2LjV2Ni41aC02LjV2LTYuNXptLTYuNiAwaDYuNXY2LjVoLTYuNXYtNi41ek01MSAyOGMtLjEtNy44LTUuMS0xMC4xLTYuMS0xMS41LTEuNC0uOS0zLjUtMS40LTUuNC0xLjQtMi0uMS01LS4xLTcuMy0uMS0yLjQgMC01LjMuMS03LjIuMS0yIC4xLTQgLjUtNS40IDEuNC0uOS4xLTYgMy44LTYgMTEuNUgxM2MyLjkuMSA1LjEuMSA3LjkuMWg3LjNjMi4zIDAgNC45IDAgNy44LS4xaDcuM2MyLjggMCA1IDAgNy45LS4xaC0uMXoiLz48L3N2Zz4="/>
 
-  <!-- WebSocket Server Section -->
-  <rect x="350" y="100" width="200" height="380" rx="10" ry="10"
-        fill="url(#server-gradient)" stroke="#008800" stroke-width="2"/>
-  <text x="450" y="130" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">WebSocket Server</text>
+  <!-- ===== DOCKER NETWORKS ===== -->
 
-  <!-- Ollama Server Section -->
-  <rect x="650" y="100" width="200" height="380" rx="10" ry="10"
-        fill="url(#ollama-gradient)" stroke="#cc6600" stroke-width="2"/>
-  <text x="750" y="130" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle">Ollama Server</text>
+  <!-- Public Network (Exposed to Internet) -->
+  <rect x="50" y="130" width="800" height="120" rx="10" ry="10" fill="#f2f2f2" stroke="#666666" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="120" y="150" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Public Network</text>
 
-  <!-- ===== CLIENT COMPONENTS ===== -->
-  <rect x="75" y="160" width="150" height="40" rx="5" ry="5" fill="white" stroke="#0066cc" stroke-width="1.5"/>
-  <text x="150" y="185" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Browser Client</text>
+  <!-- Cloudflare Network -->
+  <rect x="50" y="260" width="800" height="140" rx="10" ry="10" fill="#f2e6ff" stroke="#6600cc" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="150" y="280" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#6600cc">Cloudflare Network</text>
 
-  <rect x="75" y="220" width="150" height="40" rx="5" ry="5" fill="white" stroke="#0066cc" stroke-width="1.5"/>
-  <text x="150" y="245" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Node.js Client</text>
+  <!-- Internal Network (Docker Internal Network - Not Exposed) -->
+  <rect x="50" y="410" width="800" height="200" rx="10" ry="10" fill="#f5f5f5" stroke="#333333" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="150" y="430" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Docker Internal Network (Isolated)</text>
 
-  <rect x="75" y="280" width="150" height="40" rx="5" ry="5" fill="white" stroke="#0066cc" stroke-width="1.5"/>
-  <text x="150" y="305" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Python Client</text>
+  <!-- ===== EXTERNAL CLIENTS ===== -->
+  <rect x="60" y="160" width="160" height="80" rx="8" ry="8" fill="url(#client-gradient)" stroke="#0066cc" stroke-width="2"/>
+  <text x="140" y="190" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">External Clients</text>
+  <text x="140" y="210" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Browser / Mobile / Desktop</text>
+  <text x="140" y="225" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Node.js / Python / Custom</text>
 
-  <rect x="75" y="340" width="150" height="40" rx="5" ry="5" fill="white" stroke="#0066cc" stroke-width="1.5"/>
-  <text x="150" y="365" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Custom Clients</text>
+  <!-- Internet Cloud -->
+  <ellipse cx="300" cy="200" rx="60" ry="30" fill="#f2f2f2" stroke="#666666" stroke-width="1.5"/>
+  <text x="300" y="205" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">Internet</text>
 
-  <rect x="75" y="400" width="150" height="40" rx="5" ry="5" fill="white" stroke="#0066cc" stroke-width="1.5"/>
-  <text x="150" y="425" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Mobile Applications</text>
+  <!-- ===== CLOUDFLARE TUNNEL ===== -->
+  <rect x="380" y="170" width="160" height="60" rx="8" ry="8" fill="url(#cloudflare-gradient)" stroke="#6600cc" stroke-width="2"/>
+  <text x="460" y="195" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Public Endpoint</text>
+  <text x="460" y="215" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">wss://hostname.example.com</text>
 
-  <!-- ===== WEBSOCKET SERVER COMPONENTS ===== -->
-  <rect x="375" y="160" width="150" height="40" rx="5" ry="5" fill="white" stroke="#008800" stroke-width="1.5"/>
-  <text x="450" y="185" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Authentication</text>
+  <!-- Cloudflared Container -->
+  <rect x="380" y="300" width="160" height="60" rx="8" ry="8" fill="url(#cloudflare-gradient)" stroke="#6600cc" stroke-width="2"/>
+  <text x="460" y="325" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Cloudflared</text>
+  <text x="460" y="345" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Docker Container</text>
 
-  <rect x="375" y="220" width="150" height="40" rx="5" ry="5" fill="white" stroke="#008800" stroke-width="1.5"/>
-  <text x="450" y="245" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Challenge-Response</text>
+  <!-- ===== WEBSOCKET SERVER ===== -->
+  <rect x="380" y="450" width="160" height="140" rx="8" ry="8" fill="url(#server-gradient)" stroke="#008800" stroke-width="2"/>
+  <text x="460" y="475" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">WebSocket Server</text>
 
-  <rect x="375" y="280" width="150" height="40" rx="5" ry="5" fill="white" stroke="#008800" stroke-width="1.5"/>
-  <text x="450" y="305" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Rate Limiting</text>
+  <!-- WebSocket Server Components -->
+  <rect x="390" y="485" width="140" height="25" rx="4" ry="4" fill="white" stroke="#008800" stroke-width="1"/>
+  <text x="460" y="502" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Authentication</text>
 
-  <rect x="375" y="340" width="150" height="40" rx="5" ry="5" fill="white" stroke="#008800" stroke-width="1.5"/>
-  <text x="450" y="365" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Stream Management</text>
+  <rect x="390" y="515" width="140" height="25" rx="4" ry="4" fill="white" stroke="#008800" stroke-width="1"/>
+  <text x="460" y="532" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Rate Limiting</text>
 
-  <rect x="375" y="400" width="150" height="40" rx="5" ry="5" fill="white" stroke="#008800" stroke-width="1.5"/>
-  <text x="450" y="425" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Client Registry</text>
+  <rect x="390" y="545" width="140" height="25" rx="4" ry="4" fill="white" stroke="#008800" stroke-width="1"/>
+  <text x="460" y="562" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Client Registry</text>
 
-  <!-- ===== OLLAMA SERVER COMPONENTS ===== -->
-  <rect x="675" y="160" width="150" height="40" rx="5" ry="5" fill="white" stroke="#cc6600" stroke-width="1.5"/>
-  <text x="750" y="185" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">LLM API</text>
+  <!-- ===== SERVICE CONTAINERS ===== -->
 
-  <rect x="675" y="220" width="150" height="40" rx="5" ry="5" fill="white" stroke="#cc6600" stroke-width="1.5"/>
-  <text x="750" y="245" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Model Loading</text>
+  <!-- Ollama Container -->
+  <rect x="600" y="450" width="140" height="80" rx="8" ry="8" fill="url(#ollama-gradient)" stroke="#cc6600" stroke-width="2"/>
+  <text x="670" y="475" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Ollama</text>
+  <text x="670" y="495" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">LLM Service</text>
+  <text x="670" y="515" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Internal Only</text>
 
-  <rect x="675" y="280" width="150" height="40" rx="5" ry="5" fill="white" stroke="#cc6600" stroke-width="1.5"/>
-  <text x="750" y="305" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Text Generation</text>
+  <!-- Future Service Placeholder -->
+  <rect x="600" y="540" width="140" height="60" rx="8" ry="8" fill="url(#future-gradient)" stroke="#cc0000" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="670" y="565" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Future Services</text>
+  <text x="670" y="585" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Extensible Architecture</text>
 
-  <rect x="675" y="340" width="150" height="40" rx="5" ry="5" fill="white" stroke="#cc6600" stroke-width="1.5"/>
-  <text x="750" y="365" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Token Streaming</text>
-
-  <rect x="675" y="400" width="150" height="40" rx="5" ry="5" fill="white" stroke="#cc6600" stroke-width="1.5"/>
-  <text x="750" y="425" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Model Management</text>
+  <!-- ===== VOLUME MOUNTS ===== -->
+  <rect x="150" y="500" width="140" height="80" rx="8" ry="8" fill="#f2f2f2" stroke="#333333" stroke-width="1.5"/>
+  <text x="220" y="525" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Persistent Data</text>
+  <text x="220" y="545" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Client Keys</text>
+  <text x="220" y="565" font-family="Arial, sans-serif" font-size="12" text-anchor="middle">Configuration Files</text>
 
   <!-- ===== CONNECTION FLOWS ===== -->
 
-  <!-- Authentication Flow -->
-  <!-- 1. Challenge -->
-  <line x1="225" y1="180" x2="375" y2="180" stroke="#0066cc" stroke-width="2" marker-end="url(#arrow-blue)"/>
-  <text x="300" y="170" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#0066cc">1. Challenge</text>
+  <!-- External Client to Internet -->
+  <line x1="220" y1="200" x2="240" y2="200" stroke="#0066cc" stroke-width="2" marker-end="url(#arrow-blue)"/>
 
-  <!-- 2. Authentication -->
-  <line x1="375" y1="200" x2="225" y2="200" stroke="#0066cc" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow-blue)"/>
-  <text x="300" y="220" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#0066cc">2. Signed Response</text>
+  <!-- Internet to Cloudflare -->
+  <line x1="360" y1="200" x2="380" y2="200" stroke="#0066cc" stroke-width="2" marker-end="url(#arrow-blue)"/>
 
-  <!-- Generation Flow -->
-  <!-- 3. Generate Request -->
-  <line x1="225" y1="300" x2="375" y2="300" stroke="#008800" stroke-width="2" marker-end="url(#arrow-green)"/>
-  <text x="300" y="290" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#008800">3. Generate Request</text>
+  <!-- Cloudflare Public to Tunnel -->
+  <line x1="460" y1="230" x2="460" y2="300" stroke="#6600cc" stroke-width="2" marker-end="url(#arrow-purple)"/>
 
-  <!-- 4. API Request to Ollama -->
-  <line x1="525" y1="300" x2="675" y2="300" stroke="#008800" stroke-width="2" marker-end="url(#arrow-green)"/>
-  <text x="600" y="290" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#008800">4. API Request</text>
+  <!-- Cloudflare Tunnel to WebSocket Server -->
+  <line x1="460" y1="360" x2="460" y2="450" stroke="#6600cc" stroke-width="2" marker-end="url(#arrow-purple)"/>
 
-  <!-- 5. Token Streaming from Ollama -->
-  <line x1="675" y1="360" x2="525" y2="360" stroke="#cc6600" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow-orange)"/>
-  <text x="600" y="380" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#cc6600">5. Token Stream</text>
+  <!-- WebSocket Server to Ollama -->
+  <line x1="540" y1="490" x2="600" y2="490" stroke="#008800" stroke-width="2" marker-end="url(#arrow-green)"/>
 
-  <!-- 6. Stream to Client -->
-  <line x1="375" y1="360" x2="225" y2="360" stroke="#cc6600" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow-orange)"/>
-  <text x="300" y="380" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#cc6600">6. Stream to Client</text>
+  <!-- Ollama to WebSocket Server (Response) -->
+  <line x1="600" y1="510" x2="540" y2="510" stroke="#cc6600" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow-orange)"/>
+
+  <!-- WebSocket Server to Future Services (Potential) -->
+  <line x1="540" y1="570" x2="600" y2="570" stroke="#cc0000" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow-red)"/>
+
+  <!-- WebSocket Server to Persistent Data -->
+  <line x1="380" y1="520" x2="290" y2="520" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <line x1="290" y1="540" x2="380" y2="540" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow-green)"/>
 
   <!-- ===== LEGEND ===== -->
-  <rect x="100" y="510" width="700" height="60" rx="5" ry="5" fill="white" stroke="#dddddd" stroke-width="1"/>
-  <text x="450" y="535" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Legend</text>
+  <rect x="100" y="645" width="700" height="60" rx="5" ry="5" fill="white" stroke="#dddddd" stroke-width="1"/>
+  <text x="450" y="665" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Legend</text>
 
-  <!-- Authentication -->
-  <line x1="170" y1="555" x2="220" y2="555" stroke="#0066cc" stroke-width="2"/>
-  <text x="225" y="560" font-family="Arial, sans-serif" font-size="14" dx="5" text-anchor="start">Authentication Flow</text>
+  <!-- Request Flow -->
+  <line x1="150" y1="685" x2="190" y2="685" stroke="#0066cc" stroke-width="2"/>
+  <text x="195" y="690" font-family="Arial, sans-serif" font-size="14" dx="5" text-anchor="start">Client Requests</text>
 
-  <!-- Generation Request -->
-  <line x1="400" y1="555" x2="450" y2="555" stroke="#008800" stroke-width="2"/>
-  <text x="455" y="560" font-family="Arial, sans-serif" font-size="14" dx="5" text-anchor="start">Request Flow</text>
+  <!-- Cloudflare Flow -->
+  <line x1="350" y1="685" x2="390" y2="685" stroke="#6600cc" stroke-width="2"/>
+  <text x="395" y="690" font-family="Arial, sans-serif" font-size="14" dx="5" text-anchor="start">Cloudflare Tunnel</text>
 
-  <!-- Response -->
-  <line x1="630" y1="555" x2="680" y2="555" stroke="#cc6600" stroke-width="2" stroke-dasharray="5,3"/>
-  <text x="685" y="560" font-family="Arial, sans-serif" font-size="14" dx="5" text-anchor="start">Response Flow</text>
+  <!-- Response Flow -->
+  <line x1="550" y1="685" x2="590" y2="685" stroke="#cc6600" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="595" y="690" font-family="Arial, sans-serif" font-size="14" dx="5" text-anchor="start">Service Responses</text>
 </svg>
