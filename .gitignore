@@ -53,6 +53,7 @@ docker-compose.override.yml
 
 # Ollama model cache (if stored in project directory)
 models/
+ollama_data/
 
 # Debug files
 .node-debug/
