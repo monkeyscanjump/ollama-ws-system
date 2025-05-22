@@ -1,3 +1,5 @@
+process.setMaxListeners(20); // Increase maximum listeners to prevent warning during development
+
 import { config, logLevel, nodeEnv } from './config';
 import { createServer } from './server';
 import { createLogger, setLogLevel } from './utils';

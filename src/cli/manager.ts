@@ -18,6 +18,12 @@ import generateKeys from './commands/generate-keys';
 import registerClient from './commands/register-client';
 import configureEnv from './commands/configure-env';
 import scanEnv from './commands/scan-env';
+import setupCloudflared from './commands/setup-cloudflared';
+import startSystem from './commands/start-system';
+import stopSystem from './commands/stop-system';
+import systemStatus from './commands/system-status';
+import systemLogs from './commands/system-logs';
+import buildImage from './commands/build-image';
 
 /**
  * Registry of all available commands with their handlers and descriptions
@@ -62,6 +68,36 @@ const commands: CommandRegistry = {
     handler: scanEnv,
     description: 'Scan environment variables in source code',
     usage: 'manager scan-env'
+  },
+  'setup-cloudflared': {
+    handler: setupCloudflared,
+    description: 'Setup Cloudflare Tunnel for secure connections',
+    usage: 'manager setup-cloudflared [--tunnel-name=NAME] [--hostname=HOST] [--data-dir=DIR]'
+  },
+  'start-system': {
+    handler: startSystem,
+    description: 'Start all system services',
+    usage: 'manager start-system'
+  },
+  'stop-system': {
+    handler: stopSystem,
+    description: 'Stop all system services',
+    usage: 'manager stop-system'
+  },
+  'system-status': {
+    handler: systemStatus,
+    description: 'Show status of all system services',
+    usage: 'manager system-status'
+  },
+  'system-logs': {
+    handler: systemLogs,
+    description: 'Show logs for a system service',
+    usage: 'manager system-logs [--service=NAME] [--lines=COUNT]'
+  },
+  'build-image': {
+    handler: buildImage,
+    description: 'Build Docker image for WebSocket server',
+    usage: 'manager build-image [--tag=TAG] [--nocache]'
   }
 };
 

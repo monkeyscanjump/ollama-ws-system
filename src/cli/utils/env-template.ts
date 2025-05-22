@@ -78,6 +78,82 @@ export const validators: Record<string, ValidatorFunction> = {
 export const ENV_TEMPLATE: EnvTemplate = {
   sections: [
     {
+      id: 'directories',
+      title: 'DIRECTORY CONFIGURATION',
+      description: 'Paths for data storage and configuration files',
+      variables: [
+        {
+          name: 'DATA_DIR',
+          description: [
+            'Main data directory for the system',
+            '- Default: ./data (relative to project root)',
+            '- Contains clients database, configuration files, and credentials',
+            '- For Docker, this is mounted as a volume'
+          ],
+          default: './data',
+          prompt: 'Enter data directory path',
+          validate: validators.directory
+        },
+        {
+          name: 'KEYS_DIR',
+          description: [
+            'Directory where client key pairs are stored',
+            '- Default: ./keys (relative to project root)',
+            '- Contains private and public keys for clients'
+          ],
+          default: './keys',
+          prompt: 'Enter keys directory path',
+          validate: validators.directory
+        },
+        {
+          name: 'BACKUPS_DIR',
+          description: [
+            'Directory for client database backups',
+            '- Default: ./data/backups',
+            '- Contains timestamped backup files',
+            '- Automatic cleanup based on MAX_BACKUPS setting'
+          ],
+          default: './data/backups',
+          prompt: 'Enter backups directory path',
+          validate: validators.directory
+        },
+        {
+          name: 'REVOKED_DIR',
+          description: [
+            'Directory for storing revoked client information',
+            '- Default: ./data/revoked',
+            '- Contains records of revoked clients for auditing'
+          ],
+          default: './data/revoked',
+          prompt: 'Enter revoked clients directory path',
+          validate: validators.directory
+        },
+        {
+          name: 'CLOUDFLARED_DIR',
+          description: [
+            'Directory for Cloudflare Tunnel configuration',
+            '- Default: ./data/cloudflared',
+            '- Contains certificates and configuration for the tunnel',
+            '- Used by the cloudflared container'
+          ],
+          default: './data/cloudflared',
+          prompt: 'Enter Cloudflare configuration directory',
+          validate: validators.directory
+        },
+        {
+          name: 'CLIENTS_FILE',
+          description: [
+            'Path to the clients database file',
+            '- Default: ./data/authorized_clients.json',
+            '- Stores all registered client information',
+            '- Backed up automatically when using backup-clients command'
+          ],
+          default: './data/authorized_clients.json',
+          prompt: 'Enter clients database file path'
+        }
+      ]
+    },
+    {
       id: 'server',
       title: 'SERVER CONFIGURATION',
       description: 'Basic server settings for the WebSocket server',
@@ -109,6 +185,58 @@ export const ENV_TEMPLATE: EnvTemplate = {
       ]
     },
     {
+      id: 'client',
+      title: 'CLIENT CONFIGURATION',
+      description: 'Default settings for client management',
+      variables: [
+        {
+          name: 'DEFAULT_CLIENT_NAME',
+          description: [
+            'Default name used for client generation',
+            '- Default: client',
+            '- Used when no name is provided to generate-keys command'
+          ],
+          default: 'client',
+          prompt: 'Enter default client name'
+        },
+        {
+          name: 'KEY_SIZE',
+          description: [
+            'Default RSA key size in bits for client keys',
+            '- Default: 2048',
+            '- Higher values (4096) provide more security but slower performance',
+            '- Minimum recommended: 2048'
+          ],
+          default: '2048',
+          prompt: 'Enter default key size in bits',
+          validate: validators.positiveInteger
+        },
+        {
+          name: 'MAX_BACKUPS',
+          description: [
+            'Maximum number of client database backups to keep',
+            '- Default: 10',
+            '- Oldest backups are deleted when this limit is reached',
+            '- Set to 0 to disable automatic cleanup'
+          ],
+          default: '10',
+          prompt: 'Enter maximum number of backups to keep',
+          validate: validators.positiveInteger
+        },
+        {
+          name: 'SERVER_URL',
+          description: [
+            'Default server URL for client configuration',
+            '- Default: http://localhost:3000',
+            '- Used when generating client configuration files',
+            '- Change to your actual server address for production'
+          ],
+          default: 'http://localhost:3000',
+          prompt: 'Enter default server URL'
+        }
+      ]
+    },
+    {
       id: 'logging',
       title: 'LOGGING CONFIGURATION',
       description: 'Controls how the server generates logs',
@@ -136,18 +264,6 @@ export const ENV_TEMPLATE: EnvTemplate = {
       title: 'SECURITY CONFIGURATION',
       description: 'Security settings for authentication and client management',
       variables: [
-        {
-          name: 'DATA_DIR',
-          description: [
-            'Directory where client data is stored',
-            '- Default: ./data (relative to project root)',
-            '- Should be a secure location with appropriate permissions',
-            '- For Docker, this is mounted as a volume'
-          ],
-          default: './data',
-          prompt: 'Enter data directory path',
-          validate: validators.directory
-        },
         {
           name: 'AUTH_TIMEOUT_MS',
           description: [
@@ -220,7 +336,87 @@ export const ENV_TEMPLATE: EnvTemplate = {
           validate: validators.nodeEnv
         }
       ]
-    }
+    },
+    {
+      id: 'cloudflare',
+      title: 'CLOUDFLARE CONFIGURATION',
+      description: 'Settings for Cloudflare Tunnel integration',
+      variables: [
+        {
+          name: 'CLOUDFLARE_HOSTNAME',
+          description: [
+            'Hostname for the Cloudflare Tunnel',
+            '- Default: subdomain.example.com',
+            '- The domain name clients will connect to',
+            '- Must be a domain you control in Cloudflare'
+          ],
+          default: 'subdomain.example.com',
+          prompt: 'Enter Cloudflare tunnel hostname'
+        },
+        {
+          name: 'CLOUDFLARE_TUNNEL_NAME',
+          description: [
+            'Name for the Cloudflare Tunnel',
+            '- Default: ws-system',
+            '- Used to identify the tunnel in Cloudflare dashboard',
+            '- Change for multiple tunnels in the same account'
+          ],
+          default: 'ws-system',
+          prompt: 'Enter Cloudflare tunnel name'
+        }
+      ]
+    },
+    {
+      id: 'docker',
+      title: 'DOCKER CONFIGURATION',
+      description: 'Settings for Docker containers and image building',
+      variables: [
+        {
+          name: 'DOCKER_TAG',
+          description: [
+            'Default tag for the Docker image',
+            '- Default: latest',
+            '- Used when building and referencing the WebSocket server image',
+            '- Can be changed for version tracking (e.g., v1.0, dev, etc.)'
+          ],
+          default: 'latest',
+          prompt: 'Enter default Docker image tag'
+        },
+        {
+          name: 'CONTAINER_PREFIX',
+          description: [
+            'Prefix for container names',
+            '- Default: ws-system',
+            '- Used for naming Docker containers, networks, and volumes',
+            '- Change for multiple installations on the same host'
+          ],
+          default: 'ws-system',
+          prompt: 'Enter container name prefix'
+        },
+        {
+          name: 'NODE_VERSION',
+          description: [
+            'Node.js version for the Docker image',
+            '- Default: 20.13.1',
+            '- Used when building the WebSocket server image',
+            '- Format: major.minor.patch'
+          ],
+          default: '20.13.1',
+          prompt: 'Enter Node.js version for Docker'
+        },
+        {
+          name: 'ALPINE_TAG',
+          description: [
+            'Alpine Linux version tag for Docker images',
+            '- Default: 3.19',
+            '- Used for the base Alpine image in Dockerfiles',
+            '- Format: major.minor'
+          ],
+          default: '3.19',
+          prompt: 'Enter Alpine Linux version tag'
+        }
+      ]
+    },
   ]
 };
 
