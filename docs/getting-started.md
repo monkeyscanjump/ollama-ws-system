@@ -6,7 +6,7 @@ This guide will walk you through setting up and using the WebSocket System, a se
 
 WebSocket System creates a secure communication layer between clients and backend services using public-key authentication. The system currently supports Ollama LLM as its primary backend service, with an extensible architecture designed to accommodate additional services in the future.
 
-![System Architecture](docs/architecture.svg)
+![System Architecture](architecture.svg)
 
 ## System Requirements
 
