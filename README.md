@@ -61,7 +61,6 @@ We provide comprehensive documentation to help you get started, implement client
   - Node.js Client - How to build Node.js clients
   - Python Client - How to build Python clients
   - Browser Client - How to build web clients
-- Docker Configuration - Docker setup and customization
 - Cloudflare Tunnel Setup - Secure external access setup
 - Troubleshooting Guide - Solutions for common issues
 

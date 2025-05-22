@@ -1,29 +1,27 @@
-# Getting Started with Ollama WebSocket System
+# Getting Started with WebSocket System
 
-This guide will walk you through the initial setup and basic usage of the Ollama WebSocket System, a secure gateway for Ollama language models.
+This guide will walk you through setting up and using the WebSocket System, a secure gateway that provides authentication, access control, and real-time communication for various backend services.
 
-## What You'll Learn
+## Introduction
 
-- How to install and configure the system
-- How to create your first client
-- How to connect to the server
-- How to generate your first completion
+WebSocket System creates a secure communication layer between clients and backend services using public-key authentication. The system currently supports Ollama LLM as its primary backend service, with an extensible architecture designed to accommodate additional services in the future.
 
-## Prerequisites
+![System Architecture](docs/architecture.svg)
 
-Before you begin, ensure you have:
+## System Requirements
 
-- **Node.js** (version 16.0.0 or higher)
-- **npm** (version 7.0.0 or higher)
-- **Ollama** installed and running on your local machine or a remote server
+- **Node.js**: Version 16.0.0 or higher
+- **npm**: Version 7.0.0 or higher
+- **Docker** (recommended): Latest stable version for containerized deployment
+- **Cloudflare Account** (optional): For secure external access via Cloudflare Tunnel
 
-If you don't have Ollama installed, visit [ollama.ai](https://ollama.ai) for installation instructions for your operating system.
+## Installation
 
-## Installation Options
-
-You can install the Ollama WebSocket System using either the standard installation process or Docker. Choose the option that best fits your environment.
+You can install and run the WebSocket System either as a standalone application or using Docker (recommended).
 
 ### Standard Installation
+
+For development or standalone use:
 
 ```bash
 # Clone the repository
@@ -35,127 +33,268 @@ npm install
 
 # Build the TypeScript code
 npm run build
-
-# Run the setup script to create directories and an admin client
-npm run setup
-
-# Start the server
-npm start
 ```
 
-After running these commands, the WebSocket server will be available at `http://localhost:3000`.
+### Docker Installation (Recommended)
 
-### Docker Installation
-
-If you prefer using Docker:
+For production deployments:
 
 ```bash
 # Clone the repository
 git clone https://github.com/monkeyscanjump/ws-system.git
 cd ws-system
 
-# Build the Docker image
-npm run docker:build
-
-# Start the stack with Docker Compose
-npm run docker:start
-
-# View logs
-npm run docker:logs
+# Install dependencies (needed for the CLI tools)
+npm install
 ```
 
-The Docker setup includes both the WebSocket server and an Ollama container, with persistent volumes for data and keys.
+## Initial Setup
 
-## Initial Configuration
+The WebSocket System uses a comprehensive CLI manager tool for all administrative tasks. The setup process involves creating required directories, generating client keys, and configuring the environment.
 
-The system is configurable through environment variables or a .env file in the project root. The setup script creates a default .env file that works for most installations.
+### Using the Setup Command
 
-Key configuration options:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `3000` |
-| `OLLAMA_API_URL` | URL to Ollama API | `http://localhost:11434` |
-| `OLLAMA_DEFAULT_MODEL` | Default model | `llama2` |
-
-You can modify these settings in the .env file if needed.
-
-## Creating Your First Client
-
-The system uses public-key authentication to secure access to your Ollama models. Follow these steps to create your first client:
-
-### Step 1: Generate a Key Pair
+The easiest way to get started is to use the all-in-one setup command:
 
 ```bash
-npm run generate-keys -- my-first-client
+# For standard installation
+npx manager setup
+
+# For Docker deployment (recommended)
+npx manager setup --use-docker=true
 ```
 
-This creates:
+This interactive setup will:
+1. Create necessary directories
+2. Compile TypeScript code (if needed)
+3. Generate admin client credentials
+4. Create default configuration files
+5. Prompt you to configure Docker (if --use-docker=true)
+6. Optionally set up a Cloudflare Tunnel for secure access
 
-- `keys/my-first-client_key.pem` (private key - keep this secure!)
-- `keys/my-first-client_key.pub` (public key - share with server)
+### Manual Configuration
 
-### Step 2: Register with the Server
+If you prefer to configure each component individually:
+
+#### 1. Create required directories
 
 ```bash
-npm run register-client -- http://localhost:3000 my-first-client ./keys/my-first-client_key.pub
+npx manager configure-env
 ```
 
-The server will respond with a client ID and create a configuration file at `keys/my-first-client_config.json`.
+This interactive command will guide you through setting up your .env file with appropriate configuration values.
 
-## Connecting to the Server
+#### 2. Generate admin client keys
 
-### Using the Web Interface
+```bash
+npx manager generate-keys --name=admin --key-size=2048
+```
+
+This creates a public/private key pair for the admin client.
+
+#### 3. Register the admin client
+
+```bash
+npx manager register-client --name=admin --key-path=./keys/admin_key.pub
+```
+
+This registers the admin with the system using the generated public key.
+
+## Running the System
+
+### Docker Deployment (Recommended)
+
+If you chose Docker deployment during setup, you can start the system with:
+
+```bash
+npx manager start-system
+```
+
+This will:
+1. Build the Docker image if needed
+2. Start all required containers (WebSocket server, Ollama, Cloudflared if configured)
+3. Set up the necessary Docker networks for secure isolation
+
+To check the status of your system:
+
+```bash
+npx manager system-status
+```
+
+To view logs:
+
+```bash
+npx manager system-logs
+npx manager system-logs --service=ollama
+```
+
+To stop the system:
+
+```bash
+npx manager stop-system
+```
+
+### Standard Deployment
+
+If running without Docker:
+
+```bash
+# Start the server
+npm start
+```
+
+## Setting Up Secure External Access
+
+The WebSocket System integrates with Cloudflare Tunnel to provide secure external access without exposing ports or managing SSL certificates.
+
+```bash
+# Set up Cloudflare Tunnel
+npx manager setup-cloudflared --hostname=your-subdomain.your-domain.com
+
+# Start the system with Cloudflare Tunnel enabled
+npx manager start-system
+```
+
+After setup, your WebSocket server will be available at `wss://your-subdomain.your-domain.com` with full SSL encryption provided by Cloudflare.
+
+## Managing Clients
+
+The system uses public-key authentication similar to SSH. Each client needs a key pair for secure authentication.
+
+### Creating New Clients
+
+```bash
+# Generate a key pair for a new client
+npx manager generate-keys --name=client1
+
+# Register the client with the server
+npx manager register-client --name=client1 --key-path=./keys/client1_key.pub
+```
+
+### Listing Clients
+
+```bash
+# List all registered clients
+npx manager list-clients
+
+# Show detailed information including key fingerprints
+npx manager list-clients --detailed
+```
+
+### Revoking Client Access
+
+```bash
+# Revoke a client's access
+npx manager revoke-client --client-id=client1
+```
+
+### Backing Up Client Database
+
+```bash
+# Create a backup of all client data
+npx manager backup-clients
+```
+
+## Connecting to the System
+
+Clients connect to the WebSocket server using their client ID and private key for authentication.
+
+### Web Interface
 
 The simplest way to test your connection:
 
-1. Open your browser to `http://localhost:3000`
-2. Enter your Client ID (from the registration step)
-3. Paste your private key content (from `my-first-client_key.pem`)
-4. Click "Connect"
+1. Open your browser to `http://localhost:3000` (or your Cloudflare Tunnel URL)
+2. Enter your Client ID and private key
+3. Click "Connect"
+4. Once connected, you can interact with the backend services
 
-If authentication is successful, you'll see "Connected" status and can start sending prompts.
+### Client Libraries
 
-### Using the Command Line
+The WebSocket System can be accessed from any platform that supports WebSockets:
 
-You can verify your setup using curl:
+- Web browsers (JavaScript)
+- Node.js applications
+- Python applications
+- Mobile apps
+- Desktop applications
+
+The connection process involves:
+1. Initial connection to the WebSocket server
+2. Authentication using the client ID and a signature generated with the private key
+3. After successful authentication, interaction with backend services
+
+## Command Reference
+
+The WebSocket System includes a comprehensive CLI manager for administrative tasks:
+
+| Command | Description |
+|---------|-------------|
+| `setup` | Initialize the server environment |
+| `generate-keys` | Generate client key pair |
+| `register-client` | Register a new client |
+| `list-clients` | List all registered clients |
+| `revoke-client` | Revoke client access |
+| `backup-clients` | Backup client database |
+| `configure-env` | Configure environment settings |
+| `setup-cloudflared` | Set up Cloudflare Tunnel |
+| `start-system` | Start Docker containers |
+| `stop-system` | Stop Docker containers |
+| `system-status` | Show container status |
+| `system-logs` | View container logs |
+| `build-image` | Build Docker image |
+
+For detailed help on any command:
 
 ```bash
-# Check if the server is running
-curl http://localhost:3000
-
-# Check if Ollama is accessible
-curl http://localhost:11434/api/tags
+npx manager <command> --help
 ```
-
-## Generating Your First Completion
-
-Once connected through the web interface:
-
-1. Type a prompt in the input box (e.g., "Explain how the solar system formed")
-2. Select a model from the dropdown (defaults to "llama2")
-3. Click "Generate"
-
-The response will stream in real-time, token by token.
-
-## Next Steps
-
-Now that you have the system running:
-
-- Learn about client management to create, list, and revoke clients
-- Explore the API Reference to integrate with your own applications
-- See the Node.js Client Implementation for programmatic access
-- Check out Advanced Configuration for performance tuning
 
 ## Troubleshooting
 
-If you encounter issues:
+### Docker Issues
 
-- Verify that Ollama is running and accessible
-- Check the server logs for error messages
-- Ensure your client credentials are correct
-- See our Troubleshooting Guide for common issues
+If you encounter issues with Docker:
+
+```bash
+# Check system status
+npx manager system-status
+
+# View logs for specific services
+npx manager system-logs --service=websocket-server
+npx manager system-logs --service=ollama
+
+# Rebuild the Docker image
+npx manager build-image --nocache
+```
+
+### Authentication Problems
+
+If clients can't authenticate:
+
+1. Verify the client is registered: `npx manager list-clients`
+2. Check key permissions and formats
+3. Ensure the private key corresponds to the registered public key
+4. Verify the correct signature algorithm is being used
+
+### Connection Issues
+
+If you can't connect to the server:
+
+1. Ensure the server is running: `npx manager system-status`
+2. Check server logs: `npx manager system-logs`
+3. Verify the WebSocket URL (ws:// for local, wss:// for Cloudflare Tunnel)
+4. Check firewall settings if connecting remotely
+
+## Next Steps
+
+- Review the API Reference for detailed WebSocket API documentation
+- Explore the Security Model to understand the authentication system
+- Check out client implementation guides for Node.js, Python, and Browser
 
 ## Getting Help
 
-If you need further assistance, please [open an issue](https://github.com/monkeyscanjump/ws-system/issues) on our GitHub repository.
+If you encounter issues not covered in this guide, please:
+
+1. Check the Troubleshooting Guide
+2. Review existing GitHub issues
+3. Create a new issue with detailed information about your problem
