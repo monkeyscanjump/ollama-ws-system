@@ -276,4 +276,3 @@ ws.on('close', () => {
 
 - Security Model - Detailed explanation of the security architecture
 - Node.js Client Implementation - Full client implementation in Node.js
-- Python Client Implementation - Full client implementation in Python

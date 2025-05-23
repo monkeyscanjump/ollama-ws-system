@@ -21,7 +21,8 @@ export enum MessageType {
   STREAM_START = 'stream_start',
   STREAM_TOKEN = 'stream_token',
   STREAM_END = 'stream_end',
-  ACK = 'ack'  // Added missing ACK message type
+  ACK = 'ack',
+  BATCH = 'batch'
 }
 
 // Client connection state

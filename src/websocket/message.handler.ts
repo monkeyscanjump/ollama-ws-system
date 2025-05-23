@@ -71,6 +71,17 @@ export async function handleMessage(
         break;
       }
 
+      case MessageType.BATCH: {
+        const { messages } = message;
+        if (Array.isArray(messages)) {
+          for (const batchMessage of messages) {
+            // Process each message in the batch
+            await handleMessage(ws, JSON.stringify(batchMessage), connectionId, ip, ollamaClient, defaultModel);
+          }
+        }
+        break;
+      }
+
       default: {
         ws.send(JSON.stringify({
           type: MessageType.ERROR,

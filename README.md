@@ -45,7 +45,7 @@ For a detailed introduction, see our Getting Started Guide.
 - **Rate Limiting**: Built-in protection against brute force attacks
 - **Service Extensibility**: Designed to support multiple backend services (currently Ollama)
 - **Docker Integration**: Complete containerized solution with no external dependencies
-- **Cross-Platform Compatibility**: Connect from browsers, Node.js, Python, or any WebSocket-capable client
+- **Cross-Platform Compatibility**: Aany WebSocket-capable client
 - **Cloudflare Tunnel**: Secure external access without exposing ports or managing SSL certificates
 
 Our Security Model documentation explains the authentication system in detail.
@@ -59,8 +59,6 @@ We provide comprehensive documentation to help you get started, implement client
 - Security Model - In-depth explanation of the authentication system
 - **Client Implementations**:
   - Node.js Client - How to build Node.js clients
-  - Python Client - How to build Python clients
-  - Browser Client - How to build web clients
 - Cloudflare Tunnel Setup - Secure external access setup
 - Troubleshooting Guide - Solutions for common issues
 
@@ -205,8 +203,6 @@ The simplest way to test your connection:
 We provide detailed implementation guides for building clients:
 
 - Node.js Client Implementation
-- Python Client Implementation
-- Browser Client Implementation
 
 ## Development
 

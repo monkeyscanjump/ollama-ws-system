@@ -214,7 +214,6 @@ The WebSocket System can be accessed from any platform that supports WebSockets:
 
 - Web browsers (JavaScript)
 - Node.js applications
-- Python applications
 - Mobile apps
 - Desktop applications
 
@@ -289,7 +288,7 @@ If you can't connect to the server:
 
 - Review the API Reference for detailed WebSocket API documentation
 - Explore the Security Model to understand the authentication system
-- Check out client implementation guides for Node.js, Python, and Browser
+- Check out client implementation guides for Node.js and Browser
 
 ## Getting Help
 

@@ -4,6 +4,8 @@ import { config, logLevel, nodeEnv } from './config';
 import { createServer } from './server';
 import { createLogger, setLogLevel } from './utils';
 
+export * from './client';
+
 // Initialize logging
 const logger = createLogger('main');
 setLogLevel(logLevel);
@@ -51,5 +53,10 @@ async function start(): Promise<void> {
   }
 }
 
-// Run the server
-start();
+// Start server only if run directly
+if (require.main === module) {
+  start().catch((error) => {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  });
+}
