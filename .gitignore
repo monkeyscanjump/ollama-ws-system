@@ -1,15 +1,25 @@
 # Dependencies
 node_modules/
+.pnpm-store/
+
+# Package manager locks (keep pnpm-lock.yaml, remove others)
 package-lock.json
 yarn.lock
+# Do NOT ignore pnpm-lock.yaml as it's needed for reproducible builds
 
 # Build output
 dist/
 build/
+packages/*/dist/
+packages/*/build/
+
+# Turborepo
+.turbo/
 
 # Environment variables
 .env
 .env.local
+.env.*.local
 
 # Logs
 logs/
@@ -17,6 +27,7 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # Client keys
 keys/
@@ -29,6 +40,7 @@ data/
 
 # Coverage directory
 coverage/
+packages/*/coverage/
 
 # IDE files
 .idea/
@@ -51,10 +63,13 @@ Thumbs.db
 # Docker overrides (if using custom local settings)
 docker-compose.override.yml
 
-# Ollama model cache (if stored in project directory)
+# Ollama model cache
 models/
 ollama_data/
 
 # Debug files
 .node-debug/
 *.heapsnapshot
+
+# TypeScript incremental compilation cache
+*.tsbuildinfo
