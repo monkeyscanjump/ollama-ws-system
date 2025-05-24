@@ -1,0 +1,47 @@
+{
+  "name": "@ws-system/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for WebSocket System",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "ws-manager": "./dist/manager.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn src/manager.ts",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts",
+    "test": "jest",
+    "postinstall": "node -e \"if(process.env.NODE_ENV !== 'development') { try { require('child_process').execSync('pnpm run build'); if(process.platform !== 'win32') require('child_process').execSync('chmod +x dist/manager.js'); } catch(e) { console.log('Build step optional, skipping: ' + e.message); } }\""
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./paths": "./dist/utils/paths.js",
+    "./config": "./dist/config.js"
+  },
+  "dependencies": {
+    "@ws-system/shared": "workspace:*",
+    "chalk": "^4.1.2",
+    "commander": "^10.0.1",
+    "dotenv": "^16.0.3",
+    "fs-extra": "^11.1.1",
+    "inquirer": "^8.2.5",
+    "node-fetch": "^2.6.9",
+    "ora": "^5.4.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.1",
+    "@types/inquirer": "^8.2.6",
+    "@types/node": "^18.15.11",
+    "@types/node-fetch": "^2.6.3",
+    "@types/uuid": "^9.0.1",
+    "rimraf": "^5.0.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.0.0"
+  }
+}

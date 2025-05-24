@@ -1,0 +1,37 @@
+{
+  "name": "@ws-system/server",
+  "version": "0.1.0",
+  "description": "WebSocket server for Ollama API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "bin": {},
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn src/index.ts",
+    "start": "node dist/index.js",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@ws-system/shared": "workspace:*",
+    "@ws-system/cli": "workspace:*",
+    "ws": "^8.13.0",
+    "winston": "^3.8.2",
+    "node-fetch": "^2.6.9",
+    "dotenv": "^16.0.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "rimraf": "^5.0.0",
+    "ts-node-dev": "^2.0.0",
+    "@types/ws": "^8.5.4",
+    "@types/uuid": "^9.0.1",
+    "@types/node-fetch": "^2.6.3",
+    "@types/node": "^18.15.11"
+  }
+}
